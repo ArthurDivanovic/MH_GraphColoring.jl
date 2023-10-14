@@ -1,7 +1,8 @@
-function parse_file(file_path::String)::Tuple{Matrix{Int}, Int}
+function parse_file(file_path::String)::Tuple{Matrix{Int}, Int, String}
     file = open(file_path, "r")
     adj = Matrix{Int}(undef, 0, 0)
     m = 0
+    file_name = split(basename(file_path))
 
     for line in eachline(file)
         l = line[1]
@@ -26,7 +27,7 @@ function parse_file(file_path::String)::Tuple{Matrix{Int}, Int}
     end
 
     close(file)
-    return adj, m
+    return adj, m, file_name
 end
 
 function k_parser(file_path::String)::Dict{String, Vector{Int}}
