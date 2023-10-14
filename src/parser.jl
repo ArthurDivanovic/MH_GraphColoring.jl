@@ -28,3 +28,18 @@ function parse_file(file_path::String)::Tuple{Matrix{Int}, Int}
     close(file)
     return adj, m
 end
+
+function k_parser(file_path::String)::Dict{String, Vector{Int}}
+    file = open(file_path, "r")
+
+    k_dict = Dict{String, Vector{Int}}()
+
+    for line in eachline(file)
+        
+        list = split(line, " ")
+        k_dict[list[1]] = [parse(Int, s) for s in list[2:end]]
+
+    end
+
+    return k_dict
+end
