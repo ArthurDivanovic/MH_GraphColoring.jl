@@ -2,7 +2,7 @@ function parse_file(file_path::String)::Tuple{Matrix{Int}, Int, String}
     file = open(file_path, "r")
     adj = Matrix{Int}(undef, 0, 0)
     m = 0
-    file_name = split(basename(file_path))
+    file_name = basename(file_path)
 
     for line in eachline(file)
         l = line[1]
