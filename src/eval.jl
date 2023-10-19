@@ -65,7 +65,7 @@ end
 
 function eval_delta_modif(g::ColoredGraph, u::Int, c::Int)::Int
     conflicts = Vector{Int}
-
+    colors = g.colors
     adj = g.adj
 
     old_vertice_eval = eval_vertice(g, u)
