@@ -2,7 +2,7 @@ include("coloredgraph.jl")
 
 function eval(g::ColoredGraph)::Int
     adj = g.adj
-    n = size(adj)[1]
+    n = g.n
     colors = g.colors
 
     nb_conflict = 0
@@ -22,7 +22,7 @@ end
 function get_edge_conflicts(g::ColoredGraph)::Vector{Tuple{Int, Int}}
     adj = g.adj
     colors = g.colors
-    n = size(adj)[1]
+    n = g.n
 
     conflicts = Vector{Tuple{Int, Int}}()
 
@@ -40,10 +40,9 @@ end
 function eval_vertice(g::ColoredGraph, v::Int)::Int
     adj = g.adj
     colors = g.colors
-    n = size(adj)[1]
 
     nb_conflict = 0
-    for u = 1:n
+    for u = 1:g.n
         if adj[u,v] == 1 && colors[u] == colors[v]
             nb_conflict += 1
         end   
@@ -56,9 +55,8 @@ function eval_all_vertices(g::ColoredGraph)::Vector{Int}
     conflicts = Vector{Int}
 
     adj = g.adj
-    n = size(adj)[1]
     
-    for u = 1:n
+    for u = 1:g.n
         push!(conflicts, eval_vertice(g, u))
     end
 

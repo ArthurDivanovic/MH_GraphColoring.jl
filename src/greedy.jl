@@ -18,7 +18,7 @@ function greedy_coloring(g::ColoredGraph)::Vector{Int}
     adj = g.adj
     colors = g.colors
     k = g.k
-    n = size(adj)[1]
+    n = g.n
 
     for u in 1:n
         c_available = trues(k)
@@ -57,7 +57,7 @@ function greedy_proportion(g::ColoredGraph)::Vector{Int}
     adj = g.adj
     colors = g.colors
     k = g.k
-    n = size(adj)[1]
+    n = g.n
     
     indices = collect(1:k)
     
