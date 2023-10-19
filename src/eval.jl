@@ -8,7 +8,7 @@ function eval(g::ColoredGraph)::Int
     nb_conflict = 0
 
     for u in 1:n
-        for v = 1:n
+        for v = u+1:n
             if adj[u,v] == 1 && colors[u] == colors[v]
                 nb_conflict += 1
             end
@@ -27,7 +27,7 @@ function get_edge_conflicts(g::ColoredGraph)::Vector{Tuple{Int, Int}}
     conflicts = Vector{Tuple{Int, Int}}()
 
     for u = 1:n
-        for v = 1:n
+        for v = u+1:n
             if adj[u,v] == 1 && colors[u] == colors[v]
                 push!(conflicts, (u,v))
             end
@@ -61,5 +61,22 @@ function eval_all_vertices(g::ColoredGraph)::Vector{Int}
     end
 
     return conflicts
+end
+
+function eval_delta_modif(g::ColoredGraph, u::Int, c::Int)::Int
+    conflicts = Vector{Int}
+
+    adj = g.adj
+
+    old_vertice_eval = eval_vertice(g, u)
+    
+    new_vertice_eval = 0
+    for v = 1:g.n
+        if adj[u,v] == 1 && c == colors[v]
+            new_vertice_eval += 1
+        end   
+    end
+
+    return new_vertice_eval - old_vertice_eval
 end
 
