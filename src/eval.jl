@@ -1,5 +1,9 @@
-function eval(adj::Matrix{Int}, colors::Vector{Int})::Int
+include("coloredgraph.jl")
+
+function eval(g::ColoredGraph)::Int
+    adj = g.adj
     n = size(adj)[1]
+    colors = g.colors
 
     nb_conflict = 0
 
@@ -15,7 +19,9 @@ function eval(adj::Matrix{Int}, colors::Vector{Int})::Int
 end
 
 
-function get_edge_conflicts(adj::Matrix{Int}, colors::Vector{Int})::Vector{Tuple{Int, Int}}
+function get_edge_conflicts(g::ColoredGraph)::Vector{Tuple{Int, Int}}
+    adj = g.adj
+    colors = g.colors
     n = size(adj)[1]
 
     conflicts = Vector{Tuple{Int, Int}}()
@@ -31,7 +37,9 @@ function get_edge_conflicts(adj::Matrix{Int}, colors::Vector{Int})::Vector{Tuple
     return conflicts
 end
 
-function eval_vertice(adj::Matrix{Int}, colors::Vector{Int}, v::Int)::Int
+function eval_vertice(g::ColoredGraph, v::Int)::Int
+    adj = g.adj
+    colors = g.colors
     n = size(adj)[1]
 
     nb_conflict = 0
@@ -44,12 +52,14 @@ function eval_vertice(adj::Matrix{Int}, colors::Vector{Int}, v::Int)::Int
     return nb_conflict
 end
 
-function eval_all_vertices(adj::Matrix{Int}, colors::Vector{Int})::Vector{Int}
+function eval_all_vertices(g::ColoredGraph)::Vector{Int}
     conflicts = Vector{Int}
 
+    adj = g.adj
     n = size(adj)[1]
+    
     for u = 1:n
-        push!(conflicts, eval_vertice(adj, colors, u))
+        push!(conflicts, eval_vertice(g, u))
     end
 
     return conflicts
