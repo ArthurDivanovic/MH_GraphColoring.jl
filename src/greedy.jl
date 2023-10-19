@@ -1,3 +1,5 @@
+include("coloredgraph.jl")
+
 """
     greedy_proportion(adj::Matrix{Int}, k::Int, colors::Vector{Int})::Vector{Int}
 
@@ -12,7 +14,10 @@ If no color is available, a random one is picked.
 # Outputs
 - colors::Vector{Int} : updated color table
 """
-function greedy_coloring(adj::Matrix{Int}, k::Int, colors::Vector{Int})::Vector{Int}
+function greedy_coloring(g::ColoredGraph)::Vector{Int}
+    adj = g.adj
+    colors = g.colors
+    k = g.k
     n = size(adj)[1]
 
     for u in 1:n
@@ -48,8 +53,12 @@ If no color is available, a random one is picked.
 # Outputs
 - colors::Vector{Int} : updated color table
 """
-function greedy_proportion(adj::Matrix{Int}, k::Int, colors::Vector{Int})::Vector{Int}
+function greedy_proportion(g::ColoredGraph)::Vector{Int}
+    adj = g.adj
+    colors = g.colors
+    k = g.k
     n = size(adj)[1]
+    
     indices = collect(1:k)
     
     props = zeros(k)
