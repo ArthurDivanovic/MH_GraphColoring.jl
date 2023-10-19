@@ -9,7 +9,7 @@ end
 function init_graph(graph_path::String, k_path::String, k_idx::Int=1)::ColoredGraph
     adj, m, file_name = parse_file(graph_path)
     k_dict = k_parser(k_path)
-    k = k_dict[file_name]
+    k = k_dict[file_name][k_idx]
     colors = ones(Int, size(adj)[1])
 
     return ColoredGraph(adj, k, colors)
