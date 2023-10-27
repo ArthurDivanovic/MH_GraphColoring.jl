@@ -63,16 +63,16 @@ function eval_all_vertices(g::ColoredGraph)::Vector{Int}
     return conflicts
 end
 
-function eval_delta_modif(g::ColoredGraph, u::Int, c::Int)::Int
+function eval_delta_modif(g::ColoredGraph, v::Int, c::Int)::Int
     conflicts = Vector{Int}
     colors = g.colors
     adj = g.adj
 
-    old_vertice_eval = eval_vertice(g, u)
+    old_vertice_eval = eval_vertice(g, v)
     
     new_vertice_eval = 0
-    for v = 1:g.n
-        if adj[u,v] == 1 && c == colors[v]
+    for u = 1:g.n
+        if adj[u,v] == 1 && c == colors[u]
             new_vertice_eval += 1
         end   
     end

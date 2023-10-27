@@ -1,18 +1,14 @@
-include("coloredgraph.jl")
-
 """
-    greedy_proportion(adj::Matrix{Int}, k::Int, colors::Vector{Int})::Vector{Int}
+    greedy_coloring(adj::Matrix{Int}, k::Int, colors::Vector{Int})::Vector{Int}
 
 Greedy heuristic that iterates over the vertices and chooses the first available color. 
 If no color is available, a random one is picked.
 
 # Arguments 
-- adj::Matrix{Int} : adjacendy matrix of the graph
-- k::Int : number of colors
-- colors::Vector{Int} : color table that associates a vertice number to it's color before the execution
+- g         ::ColoredGraph  : Graph instance
 
 # Outputs
-- colors::Vector{Int} : updated color table
+- colors    ::Vector{Int}   : Updated color table
 """
 function greedy_coloring(g::ColoredGraph)::Vector{Int}
     adj = g.adj
@@ -46,12 +42,10 @@ Greedy heuristic that iterates over the vertices and chooses the available color
 If no color is available, a random one is picked.
 
 # Arguments 
-- adj::Matrix{Int} : adjacendy matrix of the graph
-- k::int : number of colors
-- colors::Vector{Int} : color table that associates a vertice number to it's color before the execution
+- g         ::ColoredGraph  : Graph instance
 
 # Outputs
-- colors::Vector{Int} : updated color table
+- colors    ::Vector{Int}   : updated color table
 """
 function greedy_proportion(g::ColoredGraph)::Vector{Int}
     adj = g.adj

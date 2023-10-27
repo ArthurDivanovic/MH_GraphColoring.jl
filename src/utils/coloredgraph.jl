@@ -1,6 +1,6 @@
 include("parser.jl")
 
-struct ColoredGraph
+mutable struct ColoredGraph
     adj     ::Matrix{Int}
     n       ::Int
     m       ::Int
