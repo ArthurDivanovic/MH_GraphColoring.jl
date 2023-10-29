@@ -33,3 +33,21 @@ function random_vertice_descent(g::ColoredGraph, nb_iter::Int)::Vector{Int}
     end
     return g.colors
 end
+
+struct RandomVerticeDescent <: Heuristic 
+    nb_iter ::Int
+end
+
+function (heuristic::RandomVerticeDescent)(g::ColoredGraph)::Vector{Int}
+    colors = random_vertice_descent(g, heuristic.nb_iter)
+    push!(g.heuristics_applied, heuristic)
+    return colors
+end
+
+function save_parameters(heuristic::RandomVerticeDescent, file_name::String)::Nothing
+    file = open("results/$file_name", "a")
+
+    write(file, "h RandomVerticeDescent = nb_iter:$(heuristic.nb_iter)\n")
+
+    close(file)
+end

@@ -64,3 +64,24 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
     end
     return best_colors, nb_conflict_min
 end
+
+
+mutable struct TabuSearch <: Heuristic
+    nb_iter::Int
+    neigh_iter::Int
+    tabu_iter::Int
+end
+
+function (heuristic::TabuSearch)(g::ColoredGraph)::Vector{Int}
+    colors, nb_conflict = tabu_search(g, heuristic.nb_iter, heuristic.neigh_iter, heuristic.tabu_iter)
+    push!(g.heuristics_applied, heuristic)
+    return colors
+end
+
+function save_parameters(heuristic::TabuSearch, file_name::String)::Nothing
+    file = open("results/$file_name", "a")
+
+    write(file, "h TabuSearch = nb_iter:$(heuristic.nb_iter) neigh_iter:$(heuristic.neigh_iter) tabu_iter:$(heuristic.tabu_iter)\n")
+
+    close(file)
+end
