@@ -35,6 +35,22 @@ function greedy_coloring(g::ColoredGraph)::Vector{Int}
     return colors
 end
 
+struct GreedyColoring <: Heuristic end
+
+function (heuristic::GreedyColoring)(g::ColoredGraph)::Vector{Int}
+    colors = greedy_coloring(g)
+    push!(g.heuristics_applied, heuristic)
+    return colors
+end
+
+function save_parameters(heuristic::GreedyColoring, file_name::String)::Nothing
+    file = open("results/$file_name", "a")
+
+    write(file, "h GreedyColoring\n")
+
+    close(file)
+end
+
 """
     greedy_proportion(adj::Matrix{Int}, k::Int, colors::Vector{Int})::Vector{Int}
 
@@ -84,4 +100,20 @@ function greedy_proportion(g::ColoredGraph)::Vector{Int}
     end
     
     return colors
+end
+
+struct GreedyProportion <: Heuristic end
+
+function (heuristic::GreedyProportion)(g::ColoredGraph)::Vector{Int}
+    colors = greedy_proportion(g)
+    push!(g.heuristics_applied, heuristic)
+    return colors
+end
+
+function save_parameters(heuristic::GreedyProportion, file_name::String)::Nothing
+    file = open("results/$file_name", "a")
+
+    write(file, "h GreedyProportion\n")
+
+    close(file)
 end

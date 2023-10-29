@@ -85,3 +85,30 @@ function simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu::Flo
     end
     return best_colors, nb_conflict_min
 end
+
+mutable struct SimulatedAnnealing <: Heuristic
+    T0          ::Union{Float64,Nothing}
+    n_samples   ::Union{Int,Nothing}
+    target_prob ::Union{Float64, Nothing}
+
+    nb_iter     ::Int 
+    mu          ::Float64
+    Tmin        ::Float64
+end
+
+function (heuristic::SimulatedAnnealing)(g::ColoredGraph)::Vector{Int}
+    if isnothing(heuristic.T0)
+        heuristic.T0 = init_temp(g, heuristic.n_samples, heuristic.target_prob)
+    end
+    colors, nb_conflict = simulated_annealing(g, heuristic.nb_iter, heuristic.T0, heuristic.mu, heuristic.Tmin)
+    push!(g.heuristics_applied, heuristic)
+    return colors
+end
+
+function save_parameters(heuristic::SimulatedAnnealing,file_name::String)::Nothing
+    file = open("results/$file_name", "a")
+
+    write(file, "h SimulatedAnnealing = nb_iter:$(heuristic.nb_iter) T0:$(heuristic.T0) mu:$(heuristic.T0) Tmin:$(heuristic.Tmin)\n")
+
+    close(file)
+end
