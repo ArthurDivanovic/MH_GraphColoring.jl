@@ -1,5 +1,7 @@
 include("parser.jl")
 
+abstract type Heuristic end
+
 mutable struct ColoredGraph
     name                ::String
     adj                 ::Matrix{Int}
@@ -25,7 +27,6 @@ function save_coloration(g::ColoredGraph)::Nothing
     file_name = g.name
     nb_conflict = eval(g)
     
-    println(file_name)
     file = open("results/$file_name", "a")
     write(file, "k $(g.k)\n")
     write(file, "o $nb_conflict\n")
