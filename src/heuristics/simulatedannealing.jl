@@ -72,6 +72,9 @@ function simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu::Flo
                     if nb_conflict < nb_conflict_min
                         nb_conflict_min = nb_conflict
                         best_colors = deepcopy(colors)
+                        if nb_conflict_min == 0
+                            break
+                        end
                     end
                 end
             else
@@ -80,6 +83,9 @@ function simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu::Flo
                     nb_conflict += delta
                 end
             end
+        end
+        if nb_conflict_min == 0
+            break
         end
         T *= mu
     end

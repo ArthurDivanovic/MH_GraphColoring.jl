@@ -59,6 +59,9 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
             if nb_conflict < nb_conflict_min
                 best_colors = deepcopy(colors)
                 nb_conflict_min = nb_conflict
+                if nb_conflict_min == 0
+                    break
+                end
             end
         end
     end
