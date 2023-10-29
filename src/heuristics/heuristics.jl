@@ -1,5 +1,3 @@
-abstract type Heuristic end
-
 include("../utils/coloredgraph.jl")
 
 function (heuristic::Heuristic)(g::ColoredGraph)
