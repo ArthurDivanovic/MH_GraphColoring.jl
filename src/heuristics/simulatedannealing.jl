@@ -51,45 +51,35 @@ Simulated annealing algorithm on a Colored Graph with a random neighboor generat
 - nb_conflict_min   ::Int           : Number of conflicts according to best_colors
 """
 
-function simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu::Float64, Tmin::Float64)::Tuple{Vector{Int}, Int}
-    n = g.n
-    k = g.k
-    colors = g.colors
-    best_colors = deepcopy(colors)
-    nb_conflict = eval(g)
-    nb_conflict_min = nb_conflict
+function simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu::Float64, Tmin::Float64)
+    start_time = time()
+    
     T = T0
 
     while T > Tmin
         for i = 1:nb_iter
-            v = rand(1:n)
-            c = rand(1:k)
-            delta = eval_delta_modif(g, v, c)
+            v, c, delta = random_neighbor(g)
             if delta <= 0
-                colors[v] = c
-                nb_conflict += delta
+                update!(g, v, c, delta)
                 if delta < 0 
-                    if nb_conflict < nb_conflict_min
-                        nb_conflict_min = nb_conflict
-                        best_colors = deepcopy(colors)
-                        if nb_conflict_min == 0
+                    if g.nb_conflict < g.nb_conflict_min
+                        update_min!(g, start_time)
+                        if g.nb_conflict_min == 0
                             break
                         end
                     end
                 end
             else
                 if rand() < exp(-delta / T)
-                    colors[v] = c
-                    nb_conflict += delta
+                    update!(g, v, c, delta)
                 end
             end
         end
-        if nb_conflict_min == 0
+        if g.nb_conflict_min == 0
             break
         end
         T *= mu
     end
-    return best_colors, nb_conflict_min
 end
 
 mutable struct SimulatedAnnealing <: Heuristic
@@ -102,16 +92,26 @@ mutable struct SimulatedAnnealing <: Heuristic
     Tmin        ::Float64
 end
 
-function (heuristic::SimulatedAnnealing)(g::ColoredGraph)::Vector{Int}
-    if isnothing(heuristic.T0)
-        heuristic.T0 = init_temp(g, heuristic.n_samples, heuristic.target_prob)
+function (heuristic::SimulatedAnnealing)(g::ColoredGraph)
+    
+    initialization_time = @elapsed begin 
+        if isnothing(heuristic.T0)
+            heuristic.T0 = init_temp(g, heuristic.n_samples, heuristic.target_prob)
+        end
     end
-    colors, nb_conflict = simulated_annealing(g, heuristic.nb_iter, heuristic.T0, heuristic.mu, heuristic.Tmin)
+
+    g.resolution_time += initialization_time
+
+    solving_time = @elapsed begin
+        simulated_annealing(g, heuristic.nb_iter, heuristic.T0, heuristic.mu, heuristic.Tmin)
+    end
+
+    g.resolution_time += solving_time
+
     push!(g.heuristics_applied, heuristic)
-    return colors
 end
 
-function save_parameters(heuristic::SimulatedAnnealing,file_name::String)::Nothing
+function save_parameters(heuristic::SimulatedAnnealing,file_name::String)
     file = open("results/$file_name", "a")
 
     write(file, "h SimulatedAnnealing = nb_iter:$(heuristic.nb_iter) T0:$(heuristic.T0) mu:$(heuristic.T0) Tmin:$(heuristic.Tmin)\n")
