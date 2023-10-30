@@ -13,59 +13,39 @@ Tabu search over a Colored Graph with a random neighboor generation.
 - best_colors       ::Vector{Int}   : best coloration found (not copied in ColoredGraph g)
 - nb_conflict_min   ::Int           : Number of conflicts according to best_colors
 """
-function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::Int)::Tuple{Vector{Int}, Int}
-    n = g.n
-    k = g.k
-    colors = g.colors
+function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::Int)
+    start_time = time()
 
-    tabu_table = ones(Int, n, k)
-
-    best_colors = deepcopy(colors)
-    nb_conflict = eval(g)
-    nb_conflict_min = nb_conflict
+    tabu_table = ones(Int, g.n, g.k)
 
     for i = 1:nb_iter
 
-        v0 = rand(1:n)
-        c0 = rand(1:k)
-        delta0 = eval_delta_modif(g, v0, c0)
+        v0, c0, delta0 = random_neighbor(g)
 
-        best_v = v0
-        best_c = c0
-        best_delta = delta0
+        best_v, best_c, best_delta = v0, c0, delta0
 
         still_v0_c0 = true
         for j = 1:neigh_iter
-            v = rand(1:n)
-            c = rand(1:k)
-            if tabu_table[v,c] < i
-                delta = eval_delta_modif(g, v, c)
-                tabu_table[v,c] = i + tabu_iter
-
-                if delta <= best_delta
-                    still_v0_c0 = false
-                    best_v = v
-                    best_c = c
-                    best_delta = delta
-                end
+            v, c, delta = random_neighbor_with_tabu!(g, tabu_table, tabu_iter, i)
+            
+            if !isnothing(delta) && delta <= best_delta
+                still_v0_c0 = false
+                best_v, best_c, best_delta = v, c, delta
             end
         end
 
         if still_v0_c0 && tabu_table[v0,c0] >= i
             continue
         else
-            colors[best_v] = best_c #modify g.colors by colors (object oriented)
-            nb_conflict += best_delta
-            if nb_conflict < nb_conflict_min
-                best_colors = deepcopy(colors)
-                nb_conflict_min = nb_conflict
-                if nb_conflict_min == 0
+            update!(g, best_v, best_c, best_delta)
+            if g.nb_conflict < g.nb_conflict_min
+                update_min!(g, start_time)
+                if g.nb_conflict_min == 0
                     break
                 end
             end
         end
     end
-    return best_colors, nb_conflict_min
 end
 
 
@@ -75,13 +55,17 @@ mutable struct TabuSearch <: Heuristic
     tabu_iter::Int
 end
 
-function (heuristic::TabuSearch)(g::ColoredGraph)::Vector{Int}
-    colors, nb_conflict = tabu_search(g, heuristic.nb_iter, heuristic.neigh_iter, heuristic.tabu_iter)
+function (heuristic::TabuSearch)(g::ColoredGraph)
+    solving_time = @elapsed begin
+        tabu_search(g, heuristic.nb_iter, heuristic.neigh_iter, heuristic.tabu_iter)
+    end
+    
+    g.resolution_time += solving_time
+
     push!(g.heuristics_applied, heuristic)
-    return colors
 end
 
-function save_parameters(heuristic::TabuSearch, file_name::String)::Nothing
+function save_parameters(heuristic::TabuSearch, file_name::String)
     file = open("results/$file_name", "a")
 
     write(file, "h TabuSearch = nb_iter:$(heuristic.nb_iter) neigh_iter:$(heuristic.neigh_iter) tabu_iter:$(heuristic.tabu_iter)\n")

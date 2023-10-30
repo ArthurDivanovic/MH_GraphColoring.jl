@@ -38,7 +38,12 @@ end
 struct GreedyColoring <: Heuristic end
 
 function (heuristic::GreedyColoring)(g::ColoredGraph)::Vector{Int}
-    colors = greedy_coloring(g)
+    solving_time = @elapsed begin 
+        colors = greedy_coloring(g)
+    end
+    
+    g.resolution_time += solving_time
+    
     push!(g.heuristics_applied, heuristic)
     return colors
 end
@@ -105,7 +110,12 @@ end
 struct GreedyProportion <: Heuristic end
 
 function (heuristic::GreedyProportion)(g::ColoredGraph)::Vector{Int}
-    colors = greedy_proportion(g)
+    solving_time = @elapsed begin 
+        colors = greedy_proportion(g)
+    end
+
+    g.resolution_time += solving_time
+
     push!(g.heuristics_applied, heuristic)
     return colors
 end

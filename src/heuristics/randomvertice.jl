@@ -14,23 +14,30 @@
 
 
 function random_vertice_descent(g::ColoredGraph, nb_iter::Int)::Vector{Int}
-    colors = g.colors
-    adj = g.adj
-    n = g.n
-    k = g.k
+    start_time = time()
+    
     
     for i = 1:nb_iter
-        u = rand(1:n)
+        u = rand(1:g.n)
 
-        neigh_colors = zeros(Int, k)
-        for v = 1:n
-            if adj[u,v] == 1
-                neigh_colors[colors[v]] += 1
+        neigh_colors = zeros(Int, g.k)
+        for v = 1:g.n
+            if g.adj[u,v] == 1
+                neigh_colors[g.colors[v]] += 1
             end
         end
+        c = argmin(neigh_colors)
+        delta = eval_delta_modif(g, u, c)
 
-        colors[u] = argmin(neigh_colors)
+        update!(g, u, c, delta)
+
+        if delta < 0
+            update_min!(g, start_time, false)
+        end
+        
     end
+    
+    update_min!(g, start_time)
     return g.colors
 end
 
@@ -39,7 +46,12 @@ struct RandomVerticeDescent <: Heuristic
 end
 
 function (heuristic::RandomVerticeDescent)(g::ColoredGraph)::Vector{Int}
-    colors = random_vertice_descent(g, heuristic.nb_iter)
+    solving_time = @elapsed begin 
+        colors = random_vertice_descent(g, heuristic.nb_iter)
+    end
+    
+    g.resolution_time += solving_time
+    
     push!(g.heuristics_applied, heuristic)
     return colors
 end
