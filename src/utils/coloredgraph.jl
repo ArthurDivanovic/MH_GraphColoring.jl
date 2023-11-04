@@ -247,19 +247,6 @@ function update!(g::ColoredGraph, v::Int, c::Int, delta::Int)
     end
 end
 
-function update!(g::ColoredGraph, v::Int, c::Int, delta::Int, tabu_table::Matrix{Int}, iter::Int, tabu_iter::Int)
-    g.colors[v] = c
-
-    g.nb_conflict += delta
-
-    if g.save_conflict
-        push!(g.conflict_history, g.nb_conflict)
-    end
-
-    for i = 1:g.n
-        tabu_table[i,g.colors[i]] =  iter + tabu_iter
-    end
-end
 
 """
     update_min!(g::ColoredGraph, start_time::Float64, copy_best::Bool=true)

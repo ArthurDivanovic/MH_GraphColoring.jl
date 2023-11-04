@@ -16,7 +16,7 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
 
     tabu_table = ones(Int, g.n, g.k)
 
-    plateau = Dict{Int, Vector{Vector{Int}}}()
+    # plateau = Dict{Int, Vector{Vector{Int}}}()
 
     colors_pivot = deepcopy(g.colors)
     nb_conflict_pivot = g.nb_conflict
@@ -28,75 +28,71 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
     @showprogress dt=1 desc="Computing..." for i in 1:nb_iter
 
         #initialize a random neighbor
-        v0, c0, delta0 = random_neighbor(g)
+        v0, c0, delta0 = nothing, nothing, nothing
+        while isnothing(delta0)
+            v0, c0, delta0 = random_neighbor(g, tabu_table, i)
+        end
 
         best_v, best_c, best_delta = v0, c0, delta0
 
-        still_v0_c0 = true
         for j = 1:neigh_iter
             #Get a new neighbor according to the tabu table
             v, c, delta = random_neighbor(g, tabu_table, i)
             
             #If this neighbor is not forbidden and is the best one so far : change best neighbor
             if !isnothing(delta) && delta <= best_delta
-                still_v0_c0 = false
                 best_v, best_c, best_delta = v, c, delta
             end
         end
 
-        #If the best neighbor is still the initial one but it is forbidden : cancel this iteration
-        if still_v0_c0 && tabu_table[v0,c0] >= i
-            continue
+        update!(g, best_v, best_c, best_delta)
 
-        #Else update coloration
-        else
-            if !in_sphere(g.colors, colors_pivot, g.k, R)
-                colors_pivot = deepcopy(g.colors)
-                nb_conflict_pivot = g.nb_conflict
+        if !in_sphere(g.colors, colors_pivot, g.k, R)
+            colors_pivot = deepcopy(g.colors)
+            nb_conflict_pivot = g.nb_conflict
 
-                if already_visited(colors_pivot, colors_recorded, g.k, R)
-                    Tc += 1
-                else
-                    Tc = 0
-                    push!(colors_recorded, colors_pivot)
-                end
-                    
+            if already_visited(colors_pivot, colors_recorded, g.k, R)
+                Tc += 1
+            else
+                Tc = 0
+                push!(colors_recorded, colors_pivot)
             end
-            
-            new_tabu_iter = tabu_iter + Tc
-            update!(g, best_v, best_c, best_delta, tabu_table, i, new_tabu_iter)
-
-            if g.nb_conflict < g.nb_conflict_min
-                update_min!(g, start_time)
-                if g.nb_conflict_min == 0
-                    break
-                end
-            end
-
-            if g.nb_conflict < nb_conflict_pivot
-                colors_pivot = deepcopy(g.colors)
-                nb_conflict_pivot = g.nb_conflict
-            end
-
-            # If the new coloration is not improving g.nb_conflict 
-            # if best_delta >= 0
-            #     if haskey(plateau, g.nb_conflict)
-          
-            #         dist = minimum([get_distance(plateau[g.nb_conflict][i], g.colors, g.k) for i = 1:length(plateau[g.nb_conflict])])
-                    
-            #         if dist < Int(floor(distance_threshold*g.n))
-            #             color_diversification(g, distance_threshold)
-            #         else
-            #             push!(plateau[g.nb_conflict], deepcopy(g.colors)) # new plateau identified
-            #         end
-            #     else
-            #         plateau[g.nb_conflict] = Vector{Int}()
-            #         push!(plateau[g.nb_conflict], deepcopy(g.colors))
-            #     end
-            # end
+                
         end
+        
+        new_tabu_iter = tabu_iter + Tc
+        update_tabu_table!(g, tabu_table, i, new_tabu_iter)
+
+        if g.nb_conflict < g.nb_conflict_min
+            update_min!(g, start_time)
+            if g.nb_conflict_min == 0
+                break
+            end
+        end
+
+        if g.nb_conflict < nb_conflict_pivot
+            colors_pivot = deepcopy(g.colors)
+            nb_conflict_pivot = g.nb_conflict
+        end
+
+        # If the new coloration is not improving g.nb_conflict 
+        # if best_delta >= 0
+        #     if haskey(plateau, g.nb_conflict)
+        
+        #         dist = minimum([get_distance(plateau[g.nb_conflict][i], g.colors, g.k) for i = 1:length(plateau[g.nb_conflict])])
+                
+        #         if dist < Int(floor(distance_threshold*g.n))
+        #             color_diversification(g, distance_threshold)
+        #         else
+        #             push!(plateau[g.nb_conflict], deepcopy(g.colors)) # new plateau identified
+        #         end
+        #     else
+        #         plateau[g.nb_conflict] = Vector{Int}()
+        #         push!(plateau[g.nb_conflict], deepcopy(g.colors))
+        #     end
+        # end
     end
-    println("plateaux : ", keys(plateau))
+    # println("plateaux : ", keys(plateau))
 end
 
 
@@ -167,4 +163,10 @@ function already_visited(colors_pivot::Vector{Int}, colors_recorded::Vector{Vect
         end
     end
     return false
+end
+
+function update_tabu_table!(g::ColoredGraph, tabu_table::Matrix{Int}, tabu_iter::Int, iter::Int)
+    for i = 1:g.n
+        tabu_table[i,g.colors[i]] =  iter + tabu_iter
+    end
 end
