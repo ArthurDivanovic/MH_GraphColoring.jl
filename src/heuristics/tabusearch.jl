@@ -22,6 +22,12 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
     # iter_diversification = Vector{Int}()
     # println("first_update : ", length(g.conflict_history) + 1)
 
+    colors_pivot = deepcopy(g.colors)
+    colors_recorded = Vector{Vector{Int}}()
+    Tc = 0
+
+    R = distance_threshold*g.n
+
     @showprogress dt=1 desc="Computing..." for i in 1:nb_iter
 
         #initialize a random neighbor
@@ -55,11 +61,22 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
                 end
             end
 
+            if !in_sphere(g.colors, colors_pivot, g.k, R)
+                colors_pivot = deepcopy(g.colors)
+
+                if already_visited(colors_pivot, colors_recorded)
+                    Tc += 1
+                else
+                    Tc = 0
+                    push!(colors_recorded, colors_pivot)
+                end
+                    
+            end
+
+
             # If the new coloration is not improving g.nb_conflict 
             if best_delta >= 0
                 if haskey(plateau, g.nb_conflict)
-                    push!(distance_plateau[g.nb_conflict], get_distance(plateau[g.nb_conflict], g.colors, g.k))
-                    # push!(iter_plateau[g.nb_conflict], i)
 
                     dist = minimum([get_distance(plateau[g.nb_conflict][i], g.colors, g.k) for i = 1:length(plateau[g.nb_conflict])])
                     
@@ -73,7 +90,6 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
                     plateau[g.nb_conflict] = Vector{Int}()
                     push!(plateau[g.nb_conflict], deepcopy(g.colors))
                     distance_plateau[g.nb_conflict] = Vector{Int}()
-                    # iter_plateau[g.nb_conflict] = Int[i]
                 end
             end
         end
@@ -149,7 +165,7 @@ function random_neighbor_with_tabu!(g::ColoredGraph, tabu_table::Matrix{Int}, ta
         delta = eval_delta_modif(g, v, new_c)
         tabu_table[v,new_c] = iter + tabu_iter
 
-        for i = 1:n
+        for i = 1:g.n
             if g.adj[v,i] == 1 
                 tabu_table[i,g.colors[i]] =  iter + tabu_iter
             end
