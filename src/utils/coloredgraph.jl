@@ -149,46 +149,6 @@ function random_neighbor(g::ColoredGraph)::Tuple{Int,Int,Int}
     return v, new_c, delta
 end
 
-"""
-    random_neighbor(g::ColoredGraph)::Tuple{Int,Int,Int}
-
-Return a random neighbor of 'g.colors', i.e. the same coloration but one vertice with a different color if it's not forbidden by tabu_table. 
-Update tabu_table.
-
-# Arguments 
-- g             ::ColoredGraph  : Graph instance
-- tabu_table    ::Matrix{Int}   : Tabu table with tabu_table[v,c] = the minimum algorithm iteration number allowed to put colors[v] = c
-- tabu_iter     ::Int           : Number of iterations forbidden for a neighboor (v,c) visited
-- iter          ::Int           : Current algorithm iteration number 
-
-# Outputs
-- v             ::Int           : Vertice from g
-- new_c         ::Int           : New color for v (different than 'g.colors[v]')
-- delta         ::Int           : Delta between g.nb_conflict and the conflict number from the neighbor generated
-"""
-
-function random_neighbor_with_tabu!(g::ColoredGraph, tabu_table::Matrix{Int}, tabu_iter::Int, iter::Int)::Tuple{Int,Int,Union{Nothing,Int}}
-    v = rand(1:g.n)
-
-    current_c = g.colors[v]
-    new_c_idx = rand(1:(g.k-1))
-
-    new_c = 0
-    if new_c_idx < current_c
-        new_c = new_c_idx
-    else
-        new_c = new_c_idx + 1
-    end
-
-    delta = nothing
-
-    if tabu_table[v,new_c] <= iter
-        delta = eval_delta_modif(g, v, new_c)
-        tabu_table[v,new_c] = iter + tabu_iter
-    end
-    
-    return v, new_c, delta
-end
 
 """
     update!(g::ColoredGraph, v::Int, c::Int, delta::Int)
