@@ -11,6 +11,7 @@ Tabu search over a Colored Graph with a random neighboor generation.
 - distance_threshold    ::Float64       : Diversification if distance(g.colors, plateau) <= distance_threshold*|V| 
 
 """
+
 function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter_function::Function, distance_threshold::Float64)
     start_time = time()
 
@@ -136,7 +137,7 @@ end
 function save_parameters(heuristic::TabuSearch, file_name::String)
     file = open("results/$file_name", "a")
 
-    write(file, "h TabuSearch = nb_iter:$(heuristic.nb_iter) neigh_iter:$(heuristic.neigh_iter) tabu_iter:$(heuristic.tabu_iter)\n")
+    write(file, "h TabuSearch = nb_iter:$(heuristic.nb_iter) neigh_iter:$(heuristic.neigh_iter) tabu_iter:$(heuristic.tabu_iter) A:$(heuristic.A) alpha:$(heuristic.alpha) m_max:$(heuristic.m_max)\n")
 
     close(file)
 end
