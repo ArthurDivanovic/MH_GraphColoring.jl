@@ -163,13 +163,14 @@ function color_diversification(g::ColoredGraph, distance_threshold::Float64)
     end
 end
 
+
 """
     already_visited(colors_pivot::Vector{Int}, colors_recorded::Vector{Vector{Int}}, k::Int, R::Int)::Bool
 
 Returns true if the current coloration is R-close to a previously recorded coloration, and false otherwise.
 
 # Arguments 
-- colors_pivot          ::vector{Int}           : current coloration
+- colors_pivot          ::Vector{Int}           : current coloration
 - colors_recorded       ::Vector{Vector{Int}}   : vector of all the previously recorded colorations
 
 # Outputs
@@ -185,12 +186,42 @@ function already_visited(colors_pivot::Vector{Int}, colors_recorded::Vector{Vect
     return false
 end
 
+
+"""
+    update_tabu_table!(g::ColoredGraph, tabu_table::Matrix{Int}, tabu_iter::Int, iter::Int)
+
+Updates tabu matrix, making the new graph g tabu.
+
+# Arguments 
+- g                     ::ColoredGraph          : Graph instance
+- tabu_table            ::Matrix{Int}           : tabu matrix
+- tabu_iter             ::Int                   : number of iterations during which the tabu is going to be active
+- iter                  ::Int                   : current iteration number
+
+# Outputs
+None
+"""
+
 function update_tabu_table!(g::ColoredGraph, tabu_table::Matrix{Int}, tabu_iter::Int, iter::Int)
     for i = 1:g.n
         tabu_table[i,g.colors[i]] =  iter + tabu_iter
     end
 end
 
+
+"""
+    dynamic_tabu_iter(A::Int=10, alpha::Float64=0.6, m_max::Int=1000)::Function
+
+Returns the function that allows to dynamically adjust tabu_iter during the tabu search heuristic
+
+# Arguments 
+- A                     ::Int                   : Parameter A of the heuristic
+- alpha                 ::Float64               : Parameter alpha of the heuristic
+- m_max                 ::Int                   : Parameter m_max of the heuristic
+
+# Outputs
+- f                     ::Function              :function that can be called during the execution of the heuristic to compute tabu_iter
+"""
 
 function dynamic_tabu_iter(A::Int=10, alpha::Float64=0.6, m_max::Int=1000)::Function
     function f(g::ColoredGraph, m::Int)
@@ -199,6 +230,18 @@ function dynamic_tabu_iter(A::Int=10, alpha::Float64=0.6, m_max::Int=1000)::Func
     return f
 end
 
+
+"""
+    constant_tabu_iter(cst::Int)::Function
+
+Returns the function that allows to fix tabu_iter to a constant for all the duration of the tabu search heuristic
+
+# Arguments 
+- cst                   ::Int                  : Contant chosen by the user for tabu_iter
+
+# Outputs
+- f                     ::Function              :function that can be called during the execution of the heuristic to compute tabu_iter
+"""
 
 function constant_tabu_iter(cst::Int)::Function
     function f(g::ColoredGraph, m::Int)
