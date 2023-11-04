@@ -149,6 +149,76 @@ function random_neighbor(g::ColoredGraph)::Tuple{Int,Int,Int}
     return v, new_c, delta
 end
 
+"""
+    is_tabu(g::ColoredGraph, v::Int, c::Int, tabu_table::Matrix{Int}, iter::Int)::Bool
+
+Returns true if changing the color of vertice v to c is tabu, and false otherwise.
+
+# Arguments 
+- g             ::ColoredGraph  : Graph instance
+- v             ::Int           : Index of the vertice under scrutiny 
+- c             ::Int           : Index of the color under scrutiny 
+- tabu_table    ::Matrix{Int}   : Tabu table with tabu_table[v,c] = the minimum algorithm iteration number allowed to put colors[v] = c
+
+# Outputs
+- tabu_neighbor ::Bool          : Boolean describing if the change is tabu or not
+"""
+
+function is_tabu(g::ColoredGraph, v::Int, c::Int, tabu_table::Matrix{Int}, iter::Int)::Bool
+    tabu_neighbor = true
+    if tabu_table[v, c] <= iter
+        tabu_neighbor = false
+    else
+        for i = 1:g.n
+            if tabu_table[i,g.colors[i]] <= iter 
+                tabu_neighbor = false
+                break
+            end
+        end
+    end
+    return tabu_neighbor
+end
+
+"""
+    random_neighbor(g::ColoredGraph)::Tuple{Int,Int,Int}
+
+Return a random neighbor of 'g.colors', i.e. the same coloration but one vertice with a different color if it's not forbidden by tabu_table. 
+Update tabu_table.
+
+# Arguments 
+- g             ::ColoredGraph  : Graph instance
+- tabu_table    ::Matrix{Int}   : Tabu table with tabu_table[v,c] = the minimum algorithm iteration number allowed to put colors[v] = c
+- tabu_iter     ::Int           : Number of iterations forbidden for a neighboor (v,c) visited
+- iter          ::Int           : Current algorithm iteration number 
+
+# Outputs
+- v             ::Int           : Vertice from g
+- new_c         ::Int           : New color for v (different than 'g.colors[v]')
+- delta         ::Int           : Delta between g.nb_conflict and the conflict number from the neighbor generated
+"""
+
+function random_neighbor(g::ColoredGraph, tabu_table::Matrix{Int}, iter::Int)::Tuple{Int,Int,Union{Nothing,Int}}
+    v = rand(1:g.n)
+
+    current_c = g.colors[v]
+    new_c_idx = rand(1:(g.k-1))
+
+    new_c = 0
+    if new_c_idx < current_c
+        new_c = new_c_idx
+    else
+        new_c = new_c_idx + 1
+    end
+
+    delta = nothing
+
+    if !is_tabu(g, v, new_c, tabu_table, iter)
+        delta = eval_delta_modif(g, v, new_c)
+    end
+    
+    return v, new_c, delta
+end
+
 
 """
     update!(g::ColoredGraph, v::Int, c::Int, delta::Int)
@@ -174,6 +244,20 @@ function update!(g::ColoredGraph, v::Int, c::Int, delta::Int)
 
     if g.save_conflict
         push!(g.conflict_history, g.nb_conflict)
+    end
+end
+
+function update!(g::ColoredGraph, v::Int, c::Int, delta::Int, tabu_table::Matrix{Int}, iter::Int, tabu_iter::Int)
+    g.colors[v] = c
+
+    g.nb_conflict += delta
+
+    if g.save_conflict
+        push!(g.conflict_history, g.nb_conflict)
+    end
+
+    for i = 1:g.n
+        tabu_table[i,g.colors[i]] =  iter + tabu_iter
     end
 end
 
