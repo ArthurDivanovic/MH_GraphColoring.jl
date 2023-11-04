@@ -62,7 +62,7 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
             if !in_sphere(g.colors, colors_pivot, g.k, R)
                 colors_pivot = deepcopy(g.colors)
 
-                if already_visited(colors_pivot, colors_recorded)
+                if already_visited(colors_pivot, colors_recorded, g.k, R)
                     Tc += 1
                 else
                     Tc = 0
@@ -89,8 +89,6 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
                 end
             end
         end
-
-        
     end
     println("plateaux : ", keys(plateau))
 end
@@ -131,7 +129,6 @@ This step belongs to the diversification process of the tabu search. It updates 
 - distance_threshold    ::Float64       : Distance threshold used in the diversification process. It represents the percentage of |V| 
                                             used to define a configuration as close to another.
 
-
 # Outputs
 None, the function only updates the graph.
 """
@@ -142,4 +139,26 @@ function color_diversification(g::ColoredGraph, distance_threshold::Float64)
         v, c, delta = random_neighbor(g)
         update!(g, v, c, delta)
     end
+end
+
+"""
+    already_visited(colors_pivot::Vector{Int}, colors_recorded::Vector{Vector{Int}}, k::Int, R::Int)::Bool
+
+Returns true if the current coloration is R-close to a previously recorded coloration, and false otherwise.
+
+# Arguments 
+- colors_pivot          ::vector{Int}           : current coloration
+- colors_recorded       ::Vector{Vector{Int}}   : vector of all the previously recorded colorations
+
+# Outputs
+Boolean
+"""
+function already_visited(colors_pivot::Vector{Int}, colors_recorded::Vector{Vector{Int}}, k::Int, R::Int)::Bool
+
+    for colors in colors_recorded
+        if in_sphere(colors, colors_pivot, k, R)
+            return true
+        end
+    end
+    return false
 end
