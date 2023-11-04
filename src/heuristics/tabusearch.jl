@@ -32,7 +32,7 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
         still_v0_c0 = true
         for j = 1:neigh_iter
             #Get a new neighbor according to the tabu table
-            v, c, delta = random_neighbor_with_tabu!(g, tabu_table, tabu_iter, i)
+            v, c, delta = random_neighbor(g, tabu_table, i)
             
             #If this neighbor is not forbidden and is the best one so far : change best neighbor
             if !isnothing(delta) && delta <= best_delta
@@ -46,9 +46,11 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
             continue
 
         #Else update coloration
-        else
-            update!(g, best_v, best_c, best_delta)
+        else            
+            update!(g, best_v, best_c, best_delta, tabu_table, i, tabu_iter)
+
             if g.nb_conflict < g.nb_conflict_min
+
                 update_min!(g, start_time)
                 if g.nb_conflict_min == 0
                     break
@@ -110,81 +112,6 @@ function save_parameters(heuristic::TabuSearch, file_name::String)
     write(file, "h TabuSearch = nb_iter:$(heuristic.nb_iter) neigh_iter:$(heuristic.neigh_iter) tabu_iter:$(heuristic.tabu_iter)\n")
 
     close(file)
-end
-
-"""
-    random_neighbor_with_tabu(g::ColoredGraph)::Tuple{Int,Int,Int}
-
-Return a random neighbor of 'g.colors', i.e. the same coloration but one vertice with a different color if it's not forbidden by tabu_table. 
-Update tabu_table.
-
-# Arguments 
-- g             ::ColoredGraph  : Graph instance
-- tabu_table    ::Matrix{Int}   : Tabu table with tabu_table[v,c] = the minimum algorithm iteration number allowed to put colors[v] = c
-- tabu_iter     ::Int           : Number of iterations forbidden for a neighboor (v,c) visited
-- iter          ::Int           : Current algorithm iteration number 
-
-# Outputs
-- v             ::Int           : Vertice from g
-- new_c         ::Int           : New color for v (different than 'g.colors[v]')
-- delta         ::Int           : Delta between g.nb_conflict and the conflict number from the neighbor generated
-"""
-
-function random_neighbor_with_tabu!(g::ColoredGraph, tabu_table::Matrix{Int}, tabu_iter::Int, iter::Int)::Tuple{Int,Int,Union{Nothing,Int}}
-    v = rand(1:g.n)
-
-    current_c = g.colors[v]
-    new_c_idx = rand(1:(g.k-1))
-
-    new_c = 0
-    if new_c_idx < current_c
-        new_c = new_c_idx
-    else
-        new_c = new_c_idx + 1
-    end
-
-    delta = nothing
-
-    if !is_tabu(g, v, new_c, tabu_table, iter)
-        delta = eval_delta_modif(g, v, new_c)
-        tabu_table[v,new_c] = iter + tabu_iter
-
-        for i = 1:g.n
-            tabu_table[i,g.colors[i]] =  iter + tabu_iter
-        end
-    end
-    
-    return v, new_c, delta
-end
-
-"""
-    is_tabu(g::ColoredGraph, v::Int, c::Int, tabu_table::Matrix{Int}, iter::Int)::Bool
-
-Returns true if changing the color of vertice v to c is tabu, and false otherwise.
-
-# Arguments 
-- g             ::ColoredGraph  : Graph instance
-- v             ::Int           : Index of the vertice under scrutiny 
-- c             ::Int           : Index of the color under scrutiny 
-- tabu_table    ::Matrix{Int}   : Tabu table with tabu_table[v,c] = the minimum algorithm iteration number allowed to put colors[v] = c
-
-# Outputs
-- tabu_neighbor ::Bool          : Boolean describing if the change is tabu or not
-"""
-
-function is_tabu(g::ColoredGraph, v::Int, c::Int, tabu_table::Matrix{Int}, iter::Int)::Bool
-    tabu_neighbor = true
-    if tabu_table[v, c] <= iter
-        tabu_neighbor = false
-    else
-        for i = 1:g.n
-            if tabu_table[i,g.colors[i]] <= iter 
-                tabu_neighbor = false
-                break
-            end
-        end
-    end
-    return tabu_neighbor
 end
 
 """
