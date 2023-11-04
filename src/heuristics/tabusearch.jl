@@ -58,7 +58,7 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
             # If the new coloration is not improving g.nb_conflict 
             if best_delta >= 0
                 if haskey(plateau, g.nb_conflict)
-                    push!(distance_plateau[g.nb_conflict], get_distance(plateau[g.nb_conflict], g.colors, g.k))
+                    # push!(distance_plateau[g.nb_conflict], get_distance(plateau[g.nb_conflict], g.colors, g.k))
                     # push!(iter_plateau[g.nb_conflict], i)
 
                     dist = minimum([get_distance(plateau[g.nb_conflict][i], g.colors, g.k) for i = 1:length(plateau[g.nb_conflict])])
@@ -67,7 +67,7 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
                         color_diversification(g, distance_threshold)
                         # push!(iter_diversification, length(g.conflict_history))
                     else
-                        push!(plateau[g.nb_conflict], deepcopy(g.colors)) # nouveau plateau identifié
+                        push!(plateau[g.nb_conflict], deepcopy(g.colors)) # new plateau identified
                     end
                 else
                     plateau[g.nb_conflict] = Vector{Int}()
@@ -149,23 +149,36 @@ function random_neighbor_with_tabu!(g::ColoredGraph, tabu_table::Matrix{Int}, ta
         delta = eval_delta_modif(g, v, new_c)
         tabu_table[v,new_c] = iter + tabu_iter
 
-        for i = 1:n
-            if g.adj[v,i] == 1 
-                tabu_table[i,g.colors[i]] =  iter + tabu_iter
-            end
+        for i = 1:g.n
+            tabu_table[i,g.colors[i]] =  iter + tabu_iter
         end
     end
     
     return v, new_c, delta
 end
 
-function is_tabu(g::ColoredGraph, v::Int, c::Int, tabu_table::Matrix{Int}, iter::Int)
+"""
+    is_tabu(g::ColoredGraph, v::Int, c::Int, tabu_table::Matrix{Int}, iter::Int)::Bool
+
+Returns true if changing the color of vertice v to c is tabu, and false otherwise.
+
+# Arguments 
+- g             ::ColoredGraph  : Graph instance
+- v             ::Int           : Index of the vertice under scrutiny 
+- c             ::Int           : Index of the color under scrutiny 
+- tabu_table    ::Matrix{Int}   : Tabu table with tabu_table[v,c] = the minimum algorithm iteration number allowed to put colors[v] = c
+
+# Outputs
+- tabu_neighbor ::Bool          : Boolean describing if the change is tabu or not
+"""
+
+function is_tabu(g::ColoredGraph, v::Int, c::Int, tabu_table::Matrix{Int}, iter::Int)::Bool
     tabu_neighbor = true
     if tabu_table[v, c] <= iter
         tabu_neighbor = false
     else
         for i = 1:g.n
-            if g.adj[v,i] == 1 && tabu_table[i,g.colors[i]] <= iter 
+            if tabu_table[i,g.colors[i]] <= iter 
                 tabu_neighbor = false
                 break
             end
@@ -174,6 +187,20 @@ function is_tabu(g::ColoredGraph, v::Int, c::Int, tabu_table::Matrix{Int}, iter:
     return tabu_neighbor
 end
 
+"""
+    color_diversification(g::ColoredGraph, distance_threshold::Float64)
+
+This step belongs to the diversification process of the tabu search. It updates the colors of a percentage of the vertices of the graph.
+
+# Arguments 
+- g                     ::ColoredGraph  : Graph instance
+- distance_threshold    ::Float64       : Distance threshold used in the diversification process. It represents the percentage of |V| 
+                                            used to define a configuration as close to another.
+
+
+# Outputs
+None, the function only updates the graph.
+"""
 
 function color_diversification(g::ColoredGraph, distance_threshold::Float64)
     nb_iter = Int(floor(distance_threshold*g.n))
