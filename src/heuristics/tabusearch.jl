@@ -19,10 +19,11 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
     plateau = Dict{Int, Vector{Vector{Int}}}()
 
     colors_pivot = deepcopy(g.colors)
+    nb_conflict_pivot = g.nb_conflict
     colors_recorded = Vector{Vector{Int}}()
     Tc = 0
 
-    R = distance_threshold*g.n
+    R = Int(floor(distance_threshold*g.n))
 
     @showprogress dt=1 desc="Computing..." for i in 1:nb_iter
 
@@ -48,19 +49,10 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
             continue
 
         #Else update coloration
-        else            
-            update!(g, best_v, best_c, best_delta, tabu_table, i, tabu_iter)
-
-            if g.nb_conflict < g.nb_conflict_min
-
-                update_min!(g, start_time)
-                if g.nb_conflict_min == 0
-                    break
-                end
-            end
-
+        else
             if !in_sphere(g.colors, colors_pivot, g.k, R)
                 colors_pivot = deepcopy(g.colors)
+                nb_conflict_pivot = g.nb_conflict
 
                 if already_visited(colors_pivot, colors_recorded)
                     Tc += 1
@@ -70,24 +62,38 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
                 end
                     
             end
+            
+            new_tabu_iter = tabu_iter + Tc
+            update!(g, best_v, best_c, best_delta, tabu_table, i, new_tabu_iter)
 
-
-            # If the new coloration is not improving g.nb_conflict 
-            if best_delta >= 0
-                if haskey(plateau, g.nb_conflict)
-          
-                    dist = minimum([get_distance(plateau[g.nb_conflict][i], g.colors, g.k) for i = 1:length(plateau[g.nb_conflict])])
-                    
-                    if dist < Int(floor(distance_threshold*g.n))
-                        color_diversification(g, distance_threshold)
-                    else
-                        push!(plateau[g.nb_conflict], deepcopy(g.colors)) # new plateau identified
-                    end
-                else
-                    plateau[g.nb_conflict] = Vector{Int}()
-                    push!(plateau[g.nb_conflict], deepcopy(g.colors))
+            if g.nb_conflict < g.nb_conflict_min
+                update_min!(g, start_time)
+                if g.nb_conflict_min == 0
+                    break
                 end
             end
+
+            if g.nb_conflict < nb_conflict_pivot
+                colors_pivot = deepcopy(g.colors)
+                nb_conflict_pivot = g.nb_conflict
+            end
+
+            # If the new coloration is not improving g.nb_conflict 
+            # if best_delta >= 0
+            #     if haskey(plateau, g.nb_conflict)
+          
+            #         dist = minimum([get_distance(plateau[g.nb_conflict][i], g.colors, g.k) for i = 1:length(plateau[g.nb_conflict])])
+                    
+            #         if dist < Int(floor(distance_threshold*g.n))
+            #             color_diversification(g, distance_threshold)
+            #         else
+            #             push!(plateau[g.nb_conflict], deepcopy(g.colors)) # new plateau identified
+            #         end
+            #     else
+            #         plateau[g.nb_conflict] = Vector{Int}()
+            #         push!(plateau[g.nb_conflict], deepcopy(g.colors))
+            #     end
+            # end
         end
 
         
