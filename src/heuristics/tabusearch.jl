@@ -11,7 +11,7 @@ Tabu search over a Colored Graph with a random neighboor generation.
 - distance_threshold    ::Float64       : Diversification if distance(g.colors, plateau) <= distance_threshold*|V| 
 
 """
-function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::Int, distance_threshold::Float64)
+function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::Function, distance_threshold::Float64)
     start_time = time()
 
     tabu_table = ones(Int, g.n, g.k)
@@ -22,6 +22,7 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
     nb_conflict_pivot = g.nb_conflict
     colors_recorded = Vector{Vector{Int}}()
     Tc = 0
+    m = 0
 
     R = Int(floor(distance_threshold*g.n))
 
@@ -99,11 +100,17 @@ end
 mutable struct TabuSearch <: Heuristic
     nb_iter             ::Int
     neigh_iter          ::Int
-    tabu_iter           ::Int
     distance_threshold  ::Float64
+
+    tabu_iter           ::Union{Int, Nothing}
+    A                   ::Union{Int, Nothing}
+    alpha               ::Union{Float64, Nothing}
+    m_max               ::Union{Float64, Nothing}
+    tabu_iter_function  ::Union{Function, Nothing}
 end
 
 function (heuristic::TabuSearch)(g::ColoredGraph)
+
     solving_time = @elapsed begin
         tabu_search(g, heuristic.nb_iter, heuristic.neigh_iter, heuristic.tabu_iter, heuristic.distance_threshold)
     end
@@ -116,7 +123,7 @@ end
 function save_parameters(heuristic::TabuSearch, file_name::String)
     file = open("results/$file_name", "a")
 
-    write(file, "h TabuSearch = nb_iter:$(heuristic.nb_iter) neigh_iter:$(heuristic.neigh_iter) tabu_iter:$(heuristic.tabu_iter)\n")
+    write(file, "h TabuSearch = nb_iter:$(heuristic.nb_iter) neigh_iter:$(heuristic.neigh_iter) tabu_iter:$(heuristic.tabu_iter) A:$(heuristic.A) alpha:$(heuristic.alpha) m_max:$(heuristic.m_max)\n")
 
     close(file)
 end
