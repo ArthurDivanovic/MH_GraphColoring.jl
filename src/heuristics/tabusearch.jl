@@ -16,13 +16,13 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
 
     tabu_table = ones(Int, g.n, g.k)
 
-    plateau = Dict{Int, Vector{Int}}()
+    plateau = Dict{Int, Vector{Vector{Int}}}()
     distance_plateau =  Dict{Int, Vector{Int}}()
     # iter_plateau = Dict{Int, Vector{Int}}()
     # iter_diversification = Vector{Int}()
     # println("first_update : ", length(g.conflict_history) + 1)
 
-    for i = 1:nb_iter
+    @showprogress dt=1 desc="Computing..." for i in 1:nb_iter
 
         #initialize a random neighbor
         v0, c0, delta0 = random_neighbor(g)
@@ -61,14 +61,17 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
                     push!(distance_plateau[g.nb_conflict], get_distance(plateau[g.nb_conflict], g.colors, g.k))
                     # push!(iter_plateau[g.nb_conflict], i)
 
-                    dist = get_distance(plateau[g.nb_conflict], g.colors, g.k)
+                    dist = minimum([get_distance(plateau[g.nb_conflict][i], g.colors, g.k) for i = 1:length(plateau[g.nb_conflict])])
                     
                     if dist < Int(floor(distance_threshold*g.n))
                         color_diversification(g, distance_threshold)
                         # push!(iter_diversification, length(g.conflict_history))
+                    else
+                        push!(plateau[g.nb_conflict], deepcopy(g.colors)) # nouveau plateau identifié
                     end
                 else
-                    plateau[g.nb_conflict] = deepcopy(g.colors)
+                    plateau[g.nb_conflict] = Vector{Int}()
+                    push!(plateau[g.nb_conflict], deepcopy(g.colors))
                     distance_plateau[g.nb_conflict] = Vector{Int}()
                     # iter_plateau[g.nb_conflict] = Int[i]
                 end

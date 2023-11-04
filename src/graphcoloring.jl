@@ -1,6 +1,7 @@
 using Random
-using Distributed
 using ProgressMeter
+using Distributed
+
 
 include("utils/utils.jl")
 include("heuristics/heuristics.jl")
