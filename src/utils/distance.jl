@@ -67,7 +67,7 @@ function hungarian_algorithm(original_cost_matrix::Matrix{Int})::Matrix{Bool}
     return matching
 end
 
-function get_distance(colors1::Vector{Int}, colors2::Vector{Int})::Int
+function get_distance(colors1::Vector{Int}, colors2::Vector{Int}, k::Int)::Int
     cost_matrix = day_bipartite_graph(colors1, colors2, k)
 
     matching = hungarian_algorithm(cost_matrix)

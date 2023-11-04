@@ -4,19 +4,23 @@
 Tabu search over a Colored Graph with a random neighboor generation. 
 
 # Arguments 
-- g                 ::ColoredGraph  : Graph instance
-- nb_iter           ::Int           : Number of iterations for the global algorithm 
-- neigh_iter        ::Int           : Number of neighboors generated at each iteration
-- tabu_iter         ::Int           : Number of iterations forbidden for a neighboor (v,c) visited
+- g                     ::ColoredGraph  : Graph instance
+- nb_iter               ::Int           : Number of iterations for the global algorithm 
+- neigh_iter            ::Int           : Number of neighboors generated at each iteration
+- tabu_iter             ::Int           : Number of iterations forbidden for a neighboor (v,c) visited
+- distance_threshold    ::Float64       : Diversification if distance(g.colors, plateau) <= distance_threshold*|V| 
 
-# Outputs
-- best_colors       ::Vector{Int}   : best coloration found (not copied in ColoredGraph g)
-- nb_conflict_min   ::Int           : Number of conflicts according to best_colors
 """
-function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::Int)
+function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::Int, distance_threshold::Float64)
     start_time = time()
 
     tabu_table = ones(Int, g.n, g.k)
+
+    plateau = Dict{Int, Vector{Int}}()
+    distance_plateau =  Dict{Int, Vector{Int}}()
+    # iter_plateau = Dict{Int, Vector{Int}}()
+    # iter_diversification = Vector{Int}()
+    # println("first_update : ", length(g.conflict_history) + 1)
 
     for i = 1:nb_iter
 
@@ -44,20 +48,45 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
                     break
                 end
             end
+
+            if best_delta >= 0
+                if haskey(plateau, g.nb_conflict)
+                    # push!(distance_plateau[g.nb_conflict], get_distance(plateau[g.nb_conflict], g.colors, g.k))
+                    # push!(iter_plateau[g.nb_conflict], i)
+
+                    dist = get_distance(plateau[g.nb_conflict], g.colors, g.k)
+                    
+                    if dist < Int(floor(distance_threshold*g.n))
+                        color_diversification(g, distance_threshold)
+                        # push!(iter_diversification, length(g.conflict_history))
+                    end
+                else
+                    plateau[g.nb_conflict] = deepcopy(g.colors)
+                    distance_plateau[g.nb_conflict] = Vector{Int}()
+                    # iter_plateau[g.nb_conflict] = Int[i]
+                end
+            end
         end
+
+        
     end
+    # println("plateaux : ", keys(plateau))
+    # println("distance_plateau : ", distance_plateau)
+    # println("iter_plateau : ", iter_plateau)
+    # println("iter_diversification : ", iter_diversification)
 end
 
 
 mutable struct TabuSearch <: Heuristic
-    nb_iter::Int
-    neigh_iter::Int
-    tabu_iter::Int
+    nb_iter             ::Int
+    neigh_iter          ::Int
+    tabu_iter           ::Int
+    distance_threshold  ::Float64
 end
 
 function (heuristic::TabuSearch)(g::ColoredGraph)
     solving_time = @elapsed begin
-        tabu_search(g, heuristic.nb_iter, heuristic.neigh_iter, heuristic.tabu_iter)
+        tabu_search(g, heuristic.nb_iter, heuristic.neigh_iter, heuristic.tabu_iter, heuristic.distance_threshold)
     end
     
     g.resolution_time += solving_time
@@ -71,4 +100,14 @@ function save_parameters(heuristic::TabuSearch, file_name::String)
     write(file, "h TabuSearch = nb_iter:$(heuristic.nb_iter) neigh_iter:$(heuristic.neigh_iter) tabu_iter:$(heuristic.tabu_iter)\n")
 
     close(file)
+end
+
+
+function color_diversification(g::ColoredGraph, distance_threshold::Float64)
+    nb_iter = Int(floor(distance_threshold*g.n))
+
+    for i = 1:nb_iter
+        v, c, delta = random_neighbor(g)
+        update!(g, v, c, delta)
+    end
 end

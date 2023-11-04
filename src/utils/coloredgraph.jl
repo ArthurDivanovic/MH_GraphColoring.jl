@@ -6,16 +6,17 @@ abstract type Heuristic end
 Main Graph structure containing all informations on its coloration.
 
 # Arguments 
+
 - name                ::String              : Graph's file name
 - adj                 ::Matrix{Int}         : Adjacency matrix
 - n                   ::Int                 : Vertice number
 - m                   ::Int                 : Edge number
+
 - k                   ::Int                 : Color number
 - colors              ::Vector{Int}         : Current vertice coloration
 - best_colors         ::Vector{Int}         : Best coloration so far
 
 - heuristics_applied  ::Vector{Heuristic}   : Coloration heuristics applied on the graph
-
 - resolution_time     ::Float64             : Current time processed by the heuristics applied
 - time_to_best        ::Float64             : Time needed to get the best coloration so far
 
@@ -30,12 +31,12 @@ mutable struct ColoredGraph
     adj                 ::Matrix{Int}
     n                   ::Int
     m                   ::Int
+    
     k                   ::Int
     colors              ::Vector{Int}
     best_colors         ::Vector{Int}
 
     heuristics_applied  ::Vector{Heuristic}
-
     resolution_time     ::Float64
     time_to_best        ::Float64
 
@@ -46,11 +47,27 @@ mutable struct ColoredGraph
 end
 
 
+"""
+    init_graph(graph_path::String, k_path::String, k_idx::Int=1, save_conflict::Bool=false)::ColoredGraph
+
+Initialize a GraphColored structure with a txt file.
+
+# Arguments 
+- graph_path    ::String        : File path for graph instance
+- k_path        ::String        : File path for coloration max number k
+- k_idx         ::Int           : Parameter k chosen for coloration 
+- save_conflict ::Bool          : Boolean to update conflict number history through the different colorations
+
+# Outputs
+- g             ::ColoredGraph   
+"""
+
 function init_graph(graph_path::String, k_path::String, k_idx::Int=1, save_conflict::Bool=false)::ColoredGraph
     adj, m, file_name = parse_file(graph_path)
     n = size(adj)[1]
     k_dict = k_parser(k_path)
     k = k_dict[file_name][k_idx]
+
     colors = rand(1:k, n)
     best_colors = deepcopy(colors)
 
@@ -71,6 +88,15 @@ function init_graph(graph_path::String, k_path::String, k_idx::Int=1, save_confl
     return g
 end
 
+"""
+    save_coloration(g::ColoredGraph)
+
+Save the best coloration so far 'g.best_colors' with all parameters.
+
+# Arguments 
+- g             ::ColoredGraph 
+
+"""
 
 function save_coloration(g::ColoredGraph)
     
@@ -91,34 +117,95 @@ function save_coloration(g::ColoredGraph)
     close(file)
 end
 
+"""
+    random_neighbor(g::ColoredGraph)::Tuple{Int,Int,Int}
 
-function reinitialize_coloration(g::ColoredGraph)
-    g.colors = rand(1:g.k,g.n)
-    g.heuristics_applied = Vector{Heuristic}()
-end
+Return a random neighbor of 'g.colors', i.e. the same coloration but one vertice with a different color
 
+# Arguments 
+- g         ::ColoredGraph  : Graph instance
 
-function random_neighbor(g::ColoredGraph, tabu_table::Union{Matrix{Int},Nothing}=nothing)::Tuple{Int,Int,Int}
+# Outputs
+- v         ::Int           : Vertice from g
+- new_c     ::Int           : New color for v (different than 'g.colors[v]')
+- delta     ::Int           : Delta between g.nb_conflict and the conflict number from the neighbor generated
+"""
+
+function random_neighbor(g::ColoredGraph)::Tuple{Int,Int,Int}
     v = rand(1:g.n)
-    c = rand(1:g.k)
-    delta = eval_delta_modif(g, v, c)
 
-    return v, c, delta
+    current_c = g.colors[v]
+    new_c_idx = rand(1:(g.k-1))
+
+    new_c = 0
+    if new_c_idx < current_c
+        new_c = new_c_idx
+    else
+        new_c = new_c_idx + 1
+    end
+
+    delta = eval_delta_modif(g, v, new_c)
+
+    return v, new_c, delta
 end
 
+"""
+    random_neighbor(g::ColoredGraph)::Tuple{Int,Int,Int}
+
+Return a random neighbor of 'g.colors', i.e. the same coloration but one vertice with a different color if it's not forbidden by tabu_table. 
+Update tabu_table.
+
+# Arguments 
+- g             ::ColoredGraph  : Graph instance
+- tabu_table    ::Matrix{Int}   : Tabu table with tabu_table[v,c] = the minimum algorithm iteration number allowed to put colors[v] = c
+- tabu_iter     ::Int           : Number of iterations forbidden for a neighboor (v,c) visited
+- iter          ::Int           : Current algorithm iteration number 
+
+# Outputs
+- v             ::Int           : Vertice from g
+- new_c         ::Int           : New color for v (different than 'g.colors[v]')
+- delta         ::Int           : Delta between g.nb_conflict and the conflict number from the neighbor generated
+"""
 
 function random_neighbor_with_tabu!(g::ColoredGraph, tabu_table::Matrix{Int}, tabu_iter::Int, iter::Int)::Tuple{Int,Int,Union{Nothing,Int}}
     v = rand(1:g.n)
-    c = rand(1:g.k)
+
+    current_c = g.colors[v]
+    new_c_idx = rand(1:(g.k-1))
+
+    new_c = 0
+    if new_c_idx < current_c
+        new_c = new_c_idx
+    else
+        new_c = new_c_idx + 1
+    end
+
     delta = nothing
 
-    if tabu_table[v,c] <= iter
-        delta = eval_delta_modif(g, v, c)
-        tabu_table[v,c] = iter + tabu_iter
+    if tabu_table[v,new_c] <= iter
+        delta = eval_delta_modif(g, v, new_c)
+        tabu_table[v,new_c] = iter + tabu_iter
     end
     
-    return v, c, delta
+    return v, new_c, delta
 end
+
+"""
+    update!(g::ColoredGraph, v::Int, c::Int, delta::Int)
+
+Update g from one coloration to one of its neighbor.
+
+Update g.colors                 : g.colors[v] = c.
+Update g.nb_conflict            : g.nb_conflict += delta.
+Update g.conflict_history       : if g.save_conflict then push!(g.conflict_history, g.nb_conflict)
+
+# Arguments 
+- g             ::ColoredGraph  : Graph instance
+- v             ::Int           : Vertice from g
+- new_c         ::Int           : New color for v (different than 'g.colors[v]')
+- delta         ::Int           : Delta between g.nb_conflict and the conflict number from the neighbor generated
+
+"""
 
 function update!(g::ColoredGraph, v::Int, c::Int, delta::Int)
     g.colors[v] = c
@@ -130,6 +217,22 @@ function update!(g::ColoredGraph, v::Int, c::Int, delta::Int)
     end
 end
 
+"""
+    update_min!(g::ColoredGraph, start_time::Float64, copy_best::Bool=true)
+
+Function called when a new optimum is found. Update the optimum parameters of g.
+
+Update g.best_colors            : if copy_best then g.best_colors = deepcopy(g.colors)
+Update g.nb_conflict_min        : g.nb_conflict_min = g.nb_conflict.
+Update g.time_to_best           : if g.save_conflict then push!(g.conflict_history, g.nb_conflict)
+
+# Arguments 
+- g             ::ColoredGraph  : Graph instance
+- start_time    ::Float64       : Algorithm starting time 
+- copy_best     ::Bool          : Boolean for changing 'g.best_colors'
+
+"""
+
 function update_min!(g::ColoredGraph, start_time::Float64, copy_best::Bool=true)
     if copy_best
         g.best_colors = deepcopy(g.colors)
@@ -140,3 +243,8 @@ function update_min!(g::ColoredGraph, start_time::Float64, copy_best::Bool=true)
     g.time_to_best = g.resolution_time + time() - start_time
 end
 
+
+function reinitialize_coloration(g::ColoredGraph)
+    g.colors = rand(1:g.k,g.n)
+    g.heuristics_applied = Vector{Heuristic}()
+end
