@@ -22,7 +22,7 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::
     # iter_diversification = Vector{Int}()
     # println("first_update : ", length(g.conflict_history) + 1)
 
-    for i = 1:nb_iter
+    @showprogress dt=1 desc="Computing..." for i in 1:nb_iter
 
         v0, c0, delta0 = random_neighbor(g)
 
