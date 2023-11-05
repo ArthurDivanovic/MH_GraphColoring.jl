@@ -1,3 +1,6 @@
+include("tabusearch.jl")
+
+
 """
     tabu_search_int(g::ColoredGraph, neigh_iter::Int, tabu_iter_function::Function, distance_threshold::Float64)::Nothing
 
@@ -103,13 +106,13 @@ None
 
 function (heuristic::TSint)(g::ColoredGraph)
     if isnothing(heuristic.tabu_iter)
-        heuristic.tabu_iter_function = dynamic_tabu_iter(heuristic.A, heuristic.alpha, heuristic.m_max)
+        heuristic.tabu_iter_function = dynamic_tabu_iter_function(heuristic.A, heuristic.alpha, heuristic.m_max)
     else
-        heuristic.tabu_iter_function = constant_tabu_iter(heuristic.tabu_iter)
+        heuristic.tabu_iter_function = constant_tabu_iter_function(heuristic.tabu_iter)
     end
 
     solving_time = @elapsed begin
-        tabu_search_int(g, heuristic.nb_iter, heuristic.neigh_iter, heuristic.tabu_iter_function, heuristic.distance_threshold)
+        tabu_search_int(g, heuristic.neigh_iter, heuristic.tabu_iter_function, heuristic.distance_threshold)
     end
     
     g.resolution_time += solving_time
