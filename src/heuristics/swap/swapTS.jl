@@ -34,14 +34,14 @@ function swap_tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_i
     @showprogress dt=1 desc="Computing..." for i in 1:nb_iter
 
         # Find best neighbor with tabu restrictions
-        best_v1, best_c1, best_delta1, best_v2, best_c2, best_delta2 = best_swap_neighbor_with_tabu(g, T.tabu_table, neigh_iter, i)
+        best_v1, best_c1, best_v2, best_c2, best_delta = best_swap_neighbor_with_tabu(g, T.tabu_table, neigh_iter, i)
 
         # Update graph
-        update!(g, best_v1, best_c1, best_delta1)
-        update!(g, best_v2, best_c2, best_delta2)
+        update!(g, best_v1, best_c1, best_delta)
+        update!(g, best_v2, best_c2, 0)
 
         # Update tabu table
-        update_tabu_table!(g, best_delta1 + best_delta2, T, i, R)
+        update_tabu_table!(g, best_delta, T, i, R)
 
         # Update best solution if needed
         if g.nb_conflict < g.nb_conflict_min
@@ -56,7 +56,7 @@ end
 
 
 """
-    best_swap_neighbor_with_tabu(g::ColoredGraph, tabu_table::Matrix{Int}, neigh_iter::Int, iter::Int)::Tuple{Int, Int, Int, Int, Int, Int}
+    best_swap_neighbor_with_tabu(g::ColoredGraph, tabu_table::Matrix{Int}, neigh_iter::Int, iter::Int)::Tuple{Int, Int, Int, Int, Int}
 
 Searches the best non-tabu swap neighbour in the neighbourhood of the current graph.
 
@@ -69,34 +69,33 @@ Searches the best non-tabu swap neighbour in the neighbourhood of the current gr
 # Outputs
 - v1                ::Int               :Index of the vertice whose color should be changed to obtained the best neighbour
 - c1                ::Int               :Index of the color to assign to best_v
-- delta1            ::Int               :Variation of the number of conflicts induced by this change 
 - v2                ::Int               :Index of the vertice whose color should be changed to obtained the best neighbour
 - c2                ::Int               :Index of the color to assign to best_v
-- delta2            ::Int               :Variation of the number of conflicts induced by this change
+- delta             ::Int               :Variation of the number of conflicts induced by this swap
 """
 
-function best_swap_neighbor_with_tabu(g::ColoredGraph, tabu_table::Matrix{Int}, neigh_iter::Int, iter::Int)::Tuple{Int, Int, Int,Int, Int, Int}
+function best_swap_neighbor_with_tabu(g::ColoredGraph, tabu_table::Matrix{Int}, neigh_iter::Int, iter::Int)::Tuple{Int,Int,Int,Int,Int}
     
     # Initialize a random non-tabu neighbor
-    v1, c1, delta1, v2, c2, delta2 = nothing, nothing, nothing, nothing, nothing, nothing
-    while isnothing(delta1) || isnothing(delta2)
-        v1, c1, delta1, v2, c2, delta2 = random_swap_neighbor(g, tabu_table, iter)
+    v1, c1, v2, c2, delta = nothing, nothing, nothing, nothing, nothing
+    while isnothing(delta) 
+        v1, c1, v2, c2, delta = random_swap_neighbor(g, tabu_table, iter)
     end
 
     # Initialize the attributes of the best non-tabu neighbour found so far
-    best_v1, best_c1, best_delta1, best_v2, best_c2, best_delta2 = v1, c1, delta1, v2, c2, delta2
+    best_v1, best_c1, best_v2, best_c2, best_delta = v1, c1, v2, c2, delta
 
     for j = 1:neigh_iter
         #Get a new neighbor according to the tabu table
-        v1, c1, delta1, v2, c2, delta2 = random_swap_neighbor(g, tabu_table, iter)
+        v1, c1, v2, c2, delta = random_swap_neighbor(g, tabu_table, iter)
         
         #If this neighbor is not forbidden and is the best one so far : change best neighbor
-        if !isnothing(delta1) && !isnothing(delta2) && (delta1 + delta2 <= best_delta1 + best_delta2)
-            best_v1, best_c1, best_delta1, best_v2, best_c2, best_delta2 = v1, c1, delta1, v2, c2, delta2
+        if !isnothing(delta) && (delta <= best_delta)
+            best_v1, best_c1, best_v2, best_c2, best_delta = v1, c1, v2, c2, delta
         end
     end
 
-    return best_v1, best_c1, best_delta1, best_v2, best_c2, best_delta2
+    return best_v1, best_c1, best_v2, best_c2, best_delta
 end
 
 

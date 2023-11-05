@@ -153,33 +153,6 @@ end
 
 
 """
-    simulate_update(g::ColoredGraph, v::Int, c::Int, delta::Int)
-
-Simulates the updates of g according to the following change: the color c is assigned to the vertice v. 
-
-# Arguments 
-- g             ::ColoredGraph      : Graph instance
-- v             ::Int               : index of a vertice of g
-- new_c         ::Int               : New color to assign to v (not equal to 'g.colors[v]')
-- delta         ::Int               : Variation of the number of conflicts induced by the change
-
-# Outputs
-- new_g         ::ColoredGraph      : New Graph instance
-"""
-
-function simulate_update(g::ColoredGraph, v::Int, c::Int, delta::Int)
-    new_g = deepcopy(g)
-    # Updates g.colors
-    new_g.colors[v] = c
-
-    # Update g.nb_conflict
-    new_g.nb_conflict += delta
-
-    return new_g
-end
-
-
-"""
     update_min!(g::ColoredGraph, start_time::Float64, copy_best::Bool=true)
 
 Function called when a new optimum is found. Updates the optimum parameters of the instance.

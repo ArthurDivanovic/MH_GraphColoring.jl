@@ -50,13 +50,10 @@ Computes the variation of number of conflicts induced.
 - new_c1     ::Int               : New color to assign to v1 (new_c is not equal to 'g.colors[v]')
 - v2         ::Int               : Vertice of g
 - new_c2     ::Int               : New color to assign to v2 (new_c is not equal to 'g.colors[v]')
-- delta1     ::Int               : Variation of the number of conflicts induced by the first change 
-- delta2     ::Int               : Variation of the number of conflicts induced by the second change 
+- delta      ::Int               : Variation of the number of conflicts induced by the swap
 """
 
-function random_swap_neighbor(g::ColoredGraph)::Tuple{Int,Int,Int,Int,Int,Int}
-    colors = deepcopy(g.colors)
-    nb_conflict = g.nb_conflict
+function random_swap_neighbor(g::ColoredGraph)::Tuple{Int,Int,Int,Int,Int}
 
     # Select two random vertice index, that have distinct colors
     v1 = rand(1:g.n)
@@ -75,11 +72,9 @@ function random_swap_neighbor(g::ColoredGraph)::Tuple{Int,Int,Int,Int,Int,Int}
     new_c2 = g.colors[v1]
 
     # Evaluate the variation of the number of conflicts induced by the swap
-    delta1 = eval_delta_modif(g, v1, new_c1) 
-    new_g = simulate_update(g, v1, new_c1, delta1)
-    delta2 = eval_delta_modif(new_g, v2, new_c2)
+    delta = eval_delta_swap_modif(g, v1, v2) 
 
-    return v1, new_c1, v2, new_c2, delta1, delta2
+    return v1, new_c1, v2, new_c2, delta
 end
 
 """
@@ -142,7 +137,7 @@ as well as the number of conflicts variation induced by this change.
 - delta             ::Int                   : Variation of the number of conflicts induced by this change
 """
 
-function random_swap_neighbor(g::ColoredGraph, tabu_table::Matrix{Int}, iter::Int)::Tuple{Int,Int,Union{Nothing,Int},Int,Int,Union{Nothing,Int}}
+function random_swap_neighbor(g::ColoredGraph, tabu_table::Matrix{Int}, iter::Int)::Tuple{Int,Int,Int,Int,Union{Nothing,Int}}
     # Select two random vertice index, that have distinct colors
     v1 = rand(1:g.n)
 
@@ -159,15 +154,12 @@ function random_swap_neighbor(g::ColoredGraph, tabu_table::Matrix{Int}, iter::In
     new_c1 = g.colors[v2]
     new_c2 = g.colors[v1]
 
-    delta1 = nothing
-    delta2 = nothing
+    delta = nothing
 
     # Check if the change is tabu. If it is, delta is nothing.
     if !is_tabu(g, v1, new_c1, tabu_table, iter) && !is_tabu(g, v2, new_c2, tabu_table, iter)
-        delta1 = eval_delta_modif(g, v1, new_c1) 
-        new_g = simulate_update(g, v1, new_c1, delta1)
-        delta2 = eval_delta_modif(new_g, v2, new_c2)
+        delta = eval_delta_swap_modif(g, v1, v2) 
     end
-    
-    return v1, new_c1, delta1, v2, new_c2, delta2
+
+    return v1, new_c1, v2, new_c2, delta
 end

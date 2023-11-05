@@ -149,3 +149,29 @@ function eval_delta_modif(g::ColoredGraph, v::Int, c::Int)::Int
 
     return delta
 end
+
+
+"""
+    eval_delta_swap_modif(g::ColoredGraph, v1::Int, v2::Int)::Int
+
+Evaluates the variation of number of conflicts induced by changing the color of the vertice v to c.
+
+# Arguments 
+- g                   ::ColoredGraph         : Graph 
+- v1                  ::Int                  : Index of the first vertice to swap
+- v2                  ::Int                  : Index of the second vertice to swap
+
+# Outputs 
+- delta               ::Int                  : Variation of number of conflicts induced by the swap
+"""
+
+function eval_delta_swap_modif(g::ColoredGraph, v1::Int, v2::Int)::Int
+
+    sum_of_deltas = eval_delta_modif(g, v1, g.colors[v2]) + eval_delta_modif(g, v2, g.colors[v1])
+
+    if g.adj[v1,v2] == 0
+        return sum_of_deltas
+    end
+
+    return sum_of_deltas - 1
+end
