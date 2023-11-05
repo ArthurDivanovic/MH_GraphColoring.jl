@@ -1,25 +1,49 @@
-function tabu_search_int(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter_function::Function, distance_threshold::Float64)
+"""
+    tabu_search_int(g::ColoredGraph, neigh_iter::Int, tabu_iter_function::Function, distance_threshold::Float64)::Nothing
+
+TS-int algorithm applied to a ColoredGraph object. 
+
+# Arguments 
+- g                         ::ColoredGraph      : Graph instance
+- neigh_iter                ::Int               : Number of neighboors generated at each iteration
+- tabu_iter_function        ::Function          : Function to determine the duration of a tabu 
+- distance_threshold        ::Float64           : Distance threshold (used as a percentage of the number of vertices)
+
+# Outputs
+None
+"""
+
+function tabu_search_int(g::ColoredGraph, neigh_iter::Int, tabu_iter_function::Function, distance_threshold::Float64)
     start_time = time()
 
+    # Intialize a priority queue of colorations
     Q = PriorityQueue{Vector{Int}, Int}()
     enqueue!(Q, g.colors, g.nb_conflict)
 
+    # Initialize tabu table
     T = init_tabu_table(g, tabu_iter_function)
 
+    # Initialize radius of the spheres
     R = Int(floor(distance_threshold*g.n))
 
     while !isempty(Q)
+        # Take the first element in the queue, with highest priority
         Cs, nb_conflict = peek(Q)
         g.colors, g.nb_conflict = deepcopy(Cs), nb_conflict
         
         i = 1
+        
         while in_sphere(g.colors, Cs, g.k, R)
+            # Start a tabu search from Cs
             best_v, best_c, best_delta = best_neighbor_with_tabu(g, T.tabu_table, neigh_iter, i)
 
+            # Update graph 
             update!(g, best_v, best_c, best_delta)
             
+            # Update tabu table
             update_tabu_table!(g, best_delta, T, i, R)
 
+            # Update best solution if necessary
             if g.nb_conflict < g.nb_conflict_min
                 update_min!(g, start_time)
                 if g.nb_conflict_min == 0
@@ -30,6 +54,7 @@ function tabu_search_int(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_it
             i += 1
         end
         
+        # Did we find a new coloration outside of the plateaus that have already been identified?
         new_plateau = true
         for (C, nb_conflict) in Q
             if in_sphere(g.colors, C, g.k, R)
@@ -38,16 +63,16 @@ function tabu_search_int(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_it
             end
         end
 
+        # If a new plateau has been discovered, add the current coloration to Q
         if new_plateau
             enqueue!(Q, deepcopy(g.colors), g.nb_conflict)
         end
 
-        #If a specific condition
+        # Pop Q
         dequeue!(Q)
     end
 
 end
-
 
 
 mutable struct TSint <: Heuristic
@@ -61,6 +86,20 @@ mutable struct TSint <: Heuristic
     m_max               ::Union{Int, Nothing}
     tabu_iter_function  ::Union{Function, Nothing}
 end
+
+
+"""
+    (heuristic::TSint)(g::ColoredGraph)::Nothing
+
+Applies the TSint heuristic object to the graph g and adds it to the list of heuristics applied.
+Updates the graph g.
+
+# Arguments 
+- g                     ::ColoredGraph      : Graph instance
+
+# Outputs
+None
+"""
 
 function (heuristic::TSint)(g::ColoredGraph)
     if isnothing(heuristic.tabu_iter)

@@ -10,6 +10,7 @@ mutable struct TabuSearch <: Heuristic
     tabu_iter_function  ::Union{Function, Nothing}
 end
 
+
 """
     tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter::Int)::Tuple{Vector{Int}, Int}
 
@@ -27,18 +28,24 @@ Tabu search over a Colored Graph with a random neighboor generation.
 function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter_function::Function, R::Int)
     start_time = time()
 
+    # Create tabu table
     T = init_tabu_table(g, tabu_iter_function)
 
     @showprogress dt=1 desc="Computing..." for i in 1:nb_iter
 
+        # Find best neighbor with tabu restrictions
         best_v, best_c, best_delta = best_neighbor_with_tabu(g, T.tabu_table, neigh_iter, i)
 
+        # Update graph
         update!(g, best_v, best_c, best_delta)
 
+        # Update tabu table
         update_tabu_table!(g, best_delta, T, i, R)
 
+        # Update best solution if needed
         if g.nb_conflict < g.nb_conflict_min
             update_min!(g, start_time)
+            # Cut execution if there are no conflicts: an optimal coloration has been found
             if g.nb_conflict_min == 0
                 break
             end
@@ -47,13 +54,32 @@ function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter_f
 end
 
 
+"""
+    best_neighbor_with_tabu(g::ColoredGraph, tabu_table::Matrix{Int}, neigh_iter::Int, iter::Int)::Tuple{Int, Int, Int}
+
+Searches the best non-tabu neighbour in the neighbourhood of the current graph.
+
+# Arguments 
+- g                     ::ColoredGraph      : Graph instance
+- tabu_table            ::Matrix{Int}       : Tabu table
+- neigh_iter            ::Int               : Number of neighboors generated at each iteration
+- iter                  ::Int               : Current iteration number in the tabu search process
+
+# Outputs
+- best_v                ::Int               :Index of the vertice whose color should be changed to obtained the best neighbour
+- best_c                ::Int               :Index of the color to assign to best_v
+- best_delta            ::Int               :Variation of the number of conflicts induced by this change 
+"""
+
 function best_neighbor_with_tabu(g::ColoredGraph, tabu_table::Matrix{Int}, neigh_iter::Int, iter::Int)::Tuple{Int, Int, Int}
-    #initialize a random neighbor
+    
+    # Initialize a random non-tabu neighbor
     v0, c0, delta0 = nothing, nothing, nothing
     while isnothing(delta0)
         v0, c0, delta0 = random_neighbor(g, tabu_table, iter)
     end
 
+    # Initialize the attributes of the best non-tabu neighbour found so far
     best_v, best_c, best_delta = v0, c0, delta0
 
     for j = 1:neigh_iter
@@ -70,23 +96,53 @@ function best_neighbor_with_tabu(g::ColoredGraph, tabu_table::Matrix{Int}, neigh
 end
 
 
+"""
+    (heuristic::TabuSearch)(g::ColoredGraph)
+
+Applies the TabuSearch heuristic object to the graph g and adds it to the list of heuristics applied.
+
+# Arguments 
+- g                     ::ColoredGraph      : Graph instance
+
+# Outputs
+None, the attributes of the graph g are updated.
+"""
+
 function (heuristic::TabuSearch)(g::ColoredGraph)
+
+    # If no fixed tabu_iter number is given, a dynamic function would be utilized
     if isnothing(heuristic.tabu_iter)
         heuristic.tabu_iter_function = dynamic_tabu_iter_function(heuristic.A, heuristic.alpha, heuristic.m_max)
     else
         heuristic.tabu_iter_function = constant_tabu_iter_function(heuristic.tabu_iter)
     end
 
+    # Perform the tabu search
     solving_time = @elapsed begin
-        R = Int(floor(distance_threshold*g.n))
+        R = Int(floor(heuristic.distance_threshold*g.n))
         tabu_search(g, heuristic.nb_iter, heuristic.neigh_iter, heuristic.tabu_iter_function, R)
     end
     
+    # Compute solving time
     g.resolution_time += solving_time
 
+    # Update the list of heuristics applied to the graph g
     push!(g.heuristics_applied, heuristic)
 end
 
+
+"""
+    save_parameters(heuristic::TabuSearch, file_name::String)
+
+Saves the parameters of the TabuSearch heuristic in the file called 'file_name'
+
+# Arguments 
+- heuristic             ::TabuSearch        : TabuSearch heuristic employed
+- file_name             ::String            : Name of the file to save results in
+
+# Outputs
+None
+"""
 
 function save_parameters(heuristic::TabuSearch, file_name::String)
     file = open("results/$file_name", "a")
@@ -111,6 +167,7 @@ This step belongs to the diversification process of the tabu search. It updates 
 None, the function only updates the graph.
 """
 function color_diversification(g::ColoredGraph, distance_threshold::Float64)
+    # Number of color changes to perform
     nb_iter = Int(floor(distance_threshold*g.n))
 
     for i = 1:nb_iter
@@ -134,7 +191,6 @@ Returns the function that allows to dynamically adjust tabu_iter during the tabu
 - f                     ::Function              :function that can be called during the execution of the heuristic to compute tabu_iter
 """
 
-
 function dynamic_tabu_iter_function(A::Int=10, alpha::Float64=0.6, m_max::Int=1000)::Function
     function f(g::ColoredGraph, m::Int)
         return A + alpha * g.nb_conflict + Int(floor(m / m_max))
@@ -154,7 +210,6 @@ Returns the function that allows to fix tabu_iter to a constant for all the dura
 # Outputs
 - f                     ::Function              :function that can be called during the execution of the heuristic to compute tabu_iter
 """
-
 
 function constant_tabu_iter_function(cst::Int)::Function
     function f(g::ColoredGraph, m::Int)
