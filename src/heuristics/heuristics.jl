@@ -13,3 +13,5 @@ include("randomvertice.jl")
 include("simulatedannealing.jl")
 include("tabusearch.jl")
 include("tsint.jl")
+
+include("swap/swap.jl")

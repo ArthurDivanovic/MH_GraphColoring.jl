@@ -1,0 +1,227 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "include(\"src/graphcoloring.jl\")\n",
+    "\n",
+    "using Plots"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "true"
+      ]
+     },
+     "execution_count": 5,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "k_path = \"data/kcolors.txt\"\n",
+    "k_dict = k_parser(k_path)\n",
+    "k_idx = 1\n",
+    "save_conflict = true"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 1. Tabu"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "\u001b[32mComputing... 100%|███████████████████████████████████████| Time: 3:12:53\u001b[39m\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "data/dsjc1000.5.col.txt\n",
+      "38\n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "\u001b[32mComputing... 100%|███████████████████████████████████████| Time: 0:02:10\u001b[39m\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "data/dsjc125.1.col.txt\n",
+      "0\n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "\u001b[32mComputing... 100%|███████████████████████████████████████| Time: 0:00:03\u001b[39m\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "data/dsjc125.9.col.txt\n",
+      "0\n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "\u001b[32mComputing... 100%|███████████████████████████████████████| Time: 0:13:28\u001b[39m\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "data/dsjc250.1.col.txt\n",
+      "3\n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "\u001b[32mComputing... 100%|███████████████████████████████████████| Time: 0:38:54\u001b[39m\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "data/dsjc250.5.col.txt\n",
+      "3\n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "\u001b[32mComputing... 100%|███████████████████████████████████████| Time: 0:17:26\u001b[39m\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "data/dsjc250.9.col.txt\n",
+      "2\n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "\u001b[32mComputing... 100%|███████████████████████████████████████| Time: 0:48:37\u001b[39m\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "data/flat300_26_0.col.txt\n",
+      "66\n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "\u001b[32mComputing... 100%|███████████████████████████████████████| Time: 0:34:05\u001b[39m\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "data/le450_15c.col.txt\n",
+      "37\n"
+     ]
+    }
+   ],
+   "source": [
+    "for filename in readdir(\"results\")[1:end]\n",
+    "    graph_path = \"data/\"*filename\n",
+    "        \n",
+    "    g = init_graph(graph_path, k_path, k_idx, save_conflict)\n",
+    "\n",
+    "    # Greedy \n",
+    "    nb_iter = 1000\n",
+    "    random_descent = RandomVerticeDescent(nb_iter)\n",
+    "    random_descent(g)\n",
+    "\n",
+    "    # Tabu\n",
+    "    nb_iter = 100000\n",
+    "    neigh_iter = 10000\n",
+    "    distance_threshold = 0.1\n",
+    "\n",
+    "    tabusearch = TabuSearch(nb_iter,\n",
+    "                            neigh_iter,\n",
+    "                            distance_threshold,\n",
+    "                            nothing,\n",
+    "                            10,\n",
+    "                            0.6,\n",
+    "                            1000,\n",
+    "                            nothing)\n",
+    "\n",
+    "    tabusearch(g)\n",
+    "\n",
+    "    # Save results \n",
+    "    save_coloration(g)\n",
+    "    println(graph_path)\n",
+    "    println(g.nb_conflict_min)\n",
+    "end"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Julia 1.9.3",
+   "language": "julia",
+   "name": "julia-1.9"
+  },
+  "language_info": {
+   "file_extension": ".jl",
+   "mimetype": "application/julia",
+   "name": "julia",
+   "version": "1.9.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

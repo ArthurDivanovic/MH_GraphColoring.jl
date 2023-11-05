@@ -1,46 +1,7 @@
 """
-    init_temp(g::ColoredGraph, n_samples::Int, target_prob::Float64)::Float64
+    simulated_swap_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu::Float64, Tmin::Float64)::Tuple{Vector{Int}, Int}
 
-Temperature initialization for simulated annealing (T0). T0 is computed so that an initial rate of 
-acceptance (target_prob) of degrading solutions is reached.
-
-# Arguments 
-- g                 ::ColoredGraph      : Graph instance
-- n_samples         ::Int               : Number of neighboors tested to estimate T0
-- target_prob       ::Float64           : Target probability of accepting a degrading solution 
-
-# Outputs
-- T0                ::Float64           : Initial temperature for the simulated annealing heuristic
-"""
-
-function init_temp(g::ColoredGraph, n_samples::Int, target_prob::Float64)::Float64
-    n = g.n
-    k = g.k
-
-    # Estimate the proportion of degrading solutions
-    delta_mean = 0
-    degrade_count = 0
-    for i = 1:n_samples
-        v = rand(1:n)
-        c = rand(1:k)
-        delta = eval_delta_modif(g, v, c)
-
-        if delta > 0
-            delta_mean += delta
-            degrade_count += 1
-        end
-    end
-    delta_mean /= degrade_count 
-    
-    # Compute T0 so that the proportion of these accepted degrading solutions is higher than target_prob
-    return -delta_mean / log(target_prob)
-end
-
-
-"""
-    simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu::Float64, Tmin::Float64)
-
-Simulated annealing algorithm on a ColoredGraph with a random neighbour generation. 
+Simulated annealing algorithm on a ColoredGraph with a random neighbour generation (using the swap operator). 
 
 # Arguments 
 - g                 ::ColoredGraph      : Graph instance
@@ -52,8 +13,7 @@ Simulated annealing algorithm on a ColoredGraph with a random neighbour generati
 # Outputs
 None
 """
-
-function simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu::Float64, Tmin::Float64)
+function swap_simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu::Float64, Tmin::Float64)
     start_time = time()
     
     T = T0
@@ -63,12 +23,14 @@ function simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu::Flo
         # A temperature level is fixed, exploration of new solutions generated randomly.
         for i = 1:nb_iter
 
-            v, c, delta = random_neighbor(g)
+            v1, c1, v2, c2, delta1, delta2 = random_swap_neighbor(g)
+            delta = delta1 + delta2
 
             # If a solution is not degrading, accept it 
             if delta <= 0
 
-                update!(g, v, c, delta)
+                update!(g, v1, c1, delta1)
+                update!(g, v2, c2, delta2)
 
                 # If the number of conflicts strictly decreases, update the best solution found so far
                 if delta < 0 
@@ -83,7 +45,8 @@ function simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu::Flo
             # If a solution is degrading, accept it with a probability exp(-delta/T)
             else
                 if rand() < exp(-delta / T)
-                    update!(g, v, c, delta)
+                    update!(g, v1, c1, delta1)
+                    update!(g, v2, c2, delta2)
                 end
             end
         end
@@ -99,8 +62,7 @@ function simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu::Flo
 end
 
 
-
-mutable struct SimulatedAnnealing <: Heuristic
+mutable struct SwapSimulatedAnnealing <: Heuristic
     T0          ::Union{Float64,Nothing}
     n_samples   ::Union{Int,Nothing}
     target_prob ::Union{Float64, Nothing}
@@ -109,7 +71,6 @@ mutable struct SimulatedAnnealing <: Heuristic
     mu          ::Float64
     Tmin        ::Float64
 end
-
 
 """
     (heuristic::SimulatedAnnealing)(g::ColoredGraph)::Nothing
@@ -124,7 +85,7 @@ Updates the graph g.
 None
 """
 
-function (heuristic::SimulatedAnnealing)(g::ColoredGraph)
+function (heuristic::SwapSimulatedAnnealing)(g::ColoredGraph)
     
     initialization_time = @elapsed begin 
         if isnothing(heuristic.T0)
@@ -135,11 +96,7 @@ function (heuristic::SimulatedAnnealing)(g::ColoredGraph)
     g.resolution_time += initialization_time
 
     solving_time = @elapsed begin
-        if !heuristic.swap 
-            simulated_annealing(g, heuristic.nb_iter, heuristic.T0, heuristic.mu, heuristic.Tmin)
-        else
-            simulated_swap_annealing(g, heuristic.nb_iter, heuristic.T0, heuristic.mu, heuristic.Tmin)
-        end
+        simulated_swap_annealing(g, heuristic.nb_iter, heuristic.T0, heuristic.mu, heuristic.Tmin)
     end
 
     g.resolution_time += solving_time
@@ -147,11 +104,10 @@ function (heuristic::SimulatedAnnealing)(g::ColoredGraph)
     push!(g.heuristics_applied, heuristic)
 end
 
-
 """
-    save_parameters(heuristic::SimulatedAnnealing, file_name::String)::Nothing
+    save_parameters(heuristic::SwapSimulatedAnnealing, file_name::String)::Nothing
 
-Saves the parameters of the SimulatedAnnealing heuristic in the file called 'file_name'.
+Saves the parameters of the SwapSimulatedAnnealing heuristic in the file called 'file_name'.
 
 # Arguments 
 - heuristic             ::SimulatedAnnealing        : SimulatedAnnealing heuristic employed
@@ -161,10 +117,10 @@ Saves the parameters of the SimulatedAnnealing heuristic in the file called 'fil
 None
 """
 
-function save_parameters(heuristic::SimulatedAnnealing,file_name::String)
+function save_parameters(heuristic::SwapSimulatedAnnealing,file_name::String)
     file = open("results/$file_name", "a")
 
-    write(file, "h SimulatedAnnealing = nb_iter:$(heuristic.nb_iter) T0:$(heuristic.T0) mu:$(heuristic.T0) Tmin:$(heuristic.Tmin)\n")
+    write(file, "h SwapSimulatedAnnealing = nb_iter:$(heuristic.nb_iter) T0:$(heuristic.T0) mu:$(heuristic.T0) Tmin:$(heuristic.Tmin)\n")
 
     close(file)
 end
