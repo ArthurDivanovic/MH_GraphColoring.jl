@@ -1,5 +1,18 @@
 include("coloredgraph.jl")
 
+
+"""
+    eval(g::ColoredGraph)::Int  
+
+Evaluates the number of conflicts in a colored graph g.
+
+# Arguments 
+- g                  ::ColoredGraph      : Graph 
+
+# Outputs 
+- nb_conflict        ::Int               : Number of conflicts iduced by the coloration of g
+"""
+
 function eval(g::ColoredGraph)::Int
     adj = g.adj
     n = g.n
@@ -8,7 +21,7 @@ function eval(g::ColoredGraph)::Int
     nb_conflict = 0
 
     for u in 1:n
-        for v = u+1:n
+        for v = u+1:n # Avoid counting two times the same conflicts
             if adj[u,v] == 1 && colors[u] == colors[v]
                 nb_conflict += 1
             end
@@ -18,6 +31,18 @@ function eval(g::ColoredGraph)::Int
     return nb_conflict
 end
 
+
+"""
+    get_edge_conflicts(g::ColoredGraph)::Vector{Tuple{Int, Int}}  
+
+Returns a vector of edges involved in a coloration conflict.
+
+# Arguments 
+- g                  ::ColoredGraph                     : Graph 
+
+# Outputs 
+- conflicts          ::Vector{Tuple{Int, Int}}          :Vector of conflictual edges
+"""
 
 function get_edge_conflicts(g::ColoredGraph)::Vector{Tuple{Int, Int}}
     adj = g.adj
@@ -37,6 +62,20 @@ function get_edge_conflicts(g::ColoredGraph)::Vector{Tuple{Int, Int}}
     return conflicts
 end
 
+
+"""
+    eval_vertice(g::ColoredGraph, v::Int)::Int
+
+Evaluates the number of conflicts induced by the color of the vertice v in the ColoredGraph g.
+
+# Arguments 
+- g                  ::ColoredGraph         : Graph 
+- v                  ::Int                  : Index of the vertice under scrutiny
+
+# Outputs 
+- nb_conflicts       ::Int                  : Number of conflicts induced by the coloration of v
+"""
+
 function eval_vertice(g::ColoredGraph, v::Int)::Int
     adj = g.adj
     colors = g.colors
@@ -51,6 +90,20 @@ function eval_vertice(g::ColoredGraph, v::Int)::Int
     return nb_conflict
 end
 
+
+"""
+    eval_all_vertices(g::ColoredGraph)::Vector{Int}
+
+Returns the vector of the number of conflicts induced by the color of the vertice v in the ColoredGraph g, 
+for all v.
+
+# Arguments 
+- g                  ::ColoredGraph         : Graph 
+
+# Outputs 
+- conflicts          ::Vector{Int}          : Vector of the number of conflicts induced by each vertice
+"""
+
 function eval_all_vertices(g::ColoredGraph)::Vector{Int}
     conflicts = Vector{Int}
 
@@ -62,6 +115,21 @@ function eval_all_vertices(g::ColoredGraph)::Vector{Int}
 
     return conflicts
 end
+
+
+"""
+    eval_delta_modif(g::ColoredGraph, v::Int, c::Int)::Int
+
+Evaluates the variation of number of conflicts induced by changing the color of the vertice v to c.
+
+# Arguments 
+- g                  ::ColoredGraph         : Graph 
+- v                  ::Int                  : Index of the vertice under scrutiny
+- c                  ::Int                  : Color to assign to v
+
+# Outputs 
+- delta              ::Int                  : Variation of number of conflicts induced by the change
+"""
 
 function eval_delta_modif(g::ColoredGraph, v::Int, c::Int)::Int
     conflicts = Vector{Int}
@@ -77,6 +145,7 @@ function eval_delta_modif(g::ColoredGraph, v::Int, c::Int)::Int
         end   
     end
 
-    return new_vertice_eval - old_vertice_eval
-end
+    delta = new_vertice_eval - old_vertice_eval
 
+    return delta
+end
