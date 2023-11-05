@@ -106,6 +106,7 @@ function save_coloration(g::ColoredGraph)
     write(file, "o $(g.nb_conflict_min)\n")
     write(file, "t $(g.resolution_time)\n")
     write(file, "b $(g.time_to_best)\n")
+    write(file, "n $(length(g.conflict_history))")
     write(file, "c $(g.best_colors)\n")
     close(file)
 
@@ -296,4 +297,5 @@ None
 function reinitialize_coloration(g::ColoredGraph)
     g.colors = rand(1:g.k,g.n)
     g.heuristics_applied = Vector{Heuristic}()
+    g.nb_conflict = eval(g)
 end
