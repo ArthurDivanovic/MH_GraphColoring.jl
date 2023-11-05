@@ -13,6 +13,7 @@ Simulated annealing algorithm on a ColoredGraph with a random neighbour generati
 # Outputs
 None
 """
+
 function swap_simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu::Float64, Tmin::Float64)
     start_time = time()
     
@@ -23,14 +24,13 @@ function swap_simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu
         # A temperature level is fixed, exploration of new solutions generated randomly.
         for i = 1:nb_iter
 
-            v1, c1, v2, c2, delta1, delta2 = random_swap_neighbor(g)
-            delta = delta1 + delta2
+            v1, c1, v2, c2, delta = random_swap_neighbor(g)
 
             # If a solution is not degrading, accept it 
             if delta <= 0
 
-                update!(g, v1, c1, delta1)
-                update!(g, v2, c2, delta2)
+                update!(g, v1, c1, delta)
+                update!(g, v2, c2, 0)
 
                 # If the number of conflicts strictly decreases, update the best solution found so far
                 if delta < 0 
@@ -45,8 +45,8 @@ function swap_simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu
             # If a solution is degrading, accept it with a probability exp(-delta/T)
             else
                 if rand() < exp(-delta / T)
-                    update!(g, v1, c1, delta1)
-                    update!(g, v2, c2, delta2)
+                    update!(g, v1, c1, delta)
+                    update!(g, v2, c2, 0)
                 end
             end
         end
@@ -72,6 +72,7 @@ mutable struct SwapSimulatedAnnealing <: Heuristic
     Tmin        ::Float64
 end
 
+
 """
     (heuristic::SimulatedAnnealing)(g::ColoredGraph)::Nothing
 
@@ -96,7 +97,7 @@ function (heuristic::SwapSimulatedAnnealing)(g::ColoredGraph)
     g.resolution_time += initialization_time
 
     solving_time = @elapsed begin
-        simulated_swap_annealing(g, heuristic.nb_iter, heuristic.T0, heuristic.mu, heuristic.Tmin)
+        swap_simulated_annealing(g, heuristic.nb_iter, heuristic.T0, heuristic.mu, heuristic.Tmin)
     end
 
     g.resolution_time += solving_time
