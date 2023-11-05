@@ -87,6 +87,42 @@ function update_tabu_table!(g::ColoredGraph, delta::Int, T::TabuTable, iter::Int
     end
 end
 
+"""
+    is_tabu(g::ColoredGraph, v::Int, c::Int, tabu_table::Matrix{Int}, iter::Int)::Bool
+
+Returns true if changing the color of vertice v to c is tabu, and false otherwise.
+
+# Arguments 
+- g             ::ColoredGraph      : Graph instance
+- v             ::Int               : Index of the vertice under scrutiny 
+- c             ::Int               : Index of the color under scrutiny 
+- tabu_table    ::Matrix{Int}       : Tabu table (tabu_table[v,c] = minimum iteration index for which it is allowed to put colors[v] = c)
+
+# Outputs
+- tabu_neighbor ::Bool              : Boolean. Equal to true if the change is tabu
+"""
+
+function is_tabu(g::ColoredGraph, v::Int, c::Int, tabu_table::Matrix{Int}, iter::Int)::Bool
+    tabu_neighbor = true
+
+    # Look in the tabu table if the assignation of the color c to v is tabu
+    if tabu_table[v, c] <= iter
+        tabu_neighbor = false
+
+    # Look in the tabu table if at least one association vertice-color is not tabu (here the tabus are complet graphs)
+    else
+        for i = 1:g.n
+            if tabu_table[i,g.colors[i]] <= iter 
+                tabu_neighbor = false
+                break
+            end
+        end
+    end
+    return tabu_neighbor
+end
+
+
+
 
 """
     already_visited(colors_pivot::Vector{Int}, colors_recorded::Vector{Vector{Int}}, k::Int, R::Int)::Bool
