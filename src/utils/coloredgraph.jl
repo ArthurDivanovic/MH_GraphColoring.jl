@@ -163,6 +163,53 @@ end
 
 
 """
+    random_swap_neighbor(g::ColoredGraph)::Tuple{Int,Int,Int,Int,Int,Int}
+
+Given a graph g, exchanges the colors of two vertices chosen randomly (only if the colors are different). 
+Computes the variation of number of conflicts induced.
+
+# Arguments 
+- g         ::ColoredGraph      : Graph instance
+
+# Outputs
+- v1         ::Int               : Vertice of g
+- new_c1     ::Int               : New color to assign to v1 (new_c is not equal to 'g.colors[v]')
+- v2         ::Int               : Vertice of g
+- new_c2     ::Int               : New color to assign to v2 (new_c is not equal to 'g.colors[v]')
+- delta1     ::Int               : Variation of the number of conflicts induced by the first change 
+- delta2     ::Int               : Variation of the number of conflicts induced by the second change 
+"""
+
+function random_swap_neighbor(g::ColoredGraph)::Tuple{Int,Int,Int,Int,Int,Int}
+    colors = deepcopy(g.colors)
+    nb_conflict = g.nb_conflict
+
+    # Select two random vertice index, that have distinct colors
+    v1 = rand(1:g.n)
+
+    same_color = true
+    v2 = v1
+
+    while same_color
+        v2 = rand(1:g.n)
+        if g.colors[v1] != g.colors[v2]
+            same_color = false
+        end
+    end
+
+    new_c1 = g.colors[v2]
+    new_c2 = g.colors[v1]
+
+    # Evaluate the variation of the number of conflicts induced by the swap
+    delta1 = eval_delta_modif(g, v1, new_c1) 
+    new_g = simulate_update(g, v1, new_c1, delta1)
+    delta2 = eval_delta_modif(new_g, v2, new_c2)
+
+    return v1, new_c1, v2, new_c2, delta1, delta2
+end
+
+
+"""
     is_tabu(g::ColoredGraph, v::Int, c::Int, tabu_table::Matrix{Int}, iter::Int)::Bool
 
 Returns true if changing the color of vertice v to c is tabu, and false otherwise.
@@ -241,6 +288,54 @@ end
 
 
 """
+    random_swap_neighbor(g::ColoredGraph, tabu_table::Matrix{Int}, iter::Int)::Tuple{Int,Int,Union{Nothing,Int},Int,Int,Union{Nothing,Int}}
+
+Given a graph g, returns a vertice index and the color to assign to it (if non-tabu), 
+as well as the number of conflicts variation induced by this change. 
+
+# Arguments 
+- g                 ::ColoredGraph          : Graph instance
+- tabu_table        ::Matrix{Int}           : Tabu table
+- iter              ::Int                   : Index of the current iteration
+
+# Outputs
+- v                 ::Int                   : Vertice of g
+- new_c             ::Int                   : New color to assign to v (new_c is not equal to 'g.colors[v]')
+- delta             ::Int                   : Variation of the number of conflicts induced by this change
+"""
+
+function random_swap_neighbor(g::ColoredGraph, tabu_table::Matrix{Int}, iter::Int)::Tuple{Int,Int,Union{Nothing,Int},Int,Int,Union{Nothing,Int}}
+    # Select two random vertice index, that have distinct colors
+    v1 = rand(1:g.n)
+
+    same_color = true
+    v2 = v1
+
+    while same_color
+        v2 = rand(1:g.n)
+        if g.colors[v1] != g.colors[v2]
+            same_color = false
+        end
+    end
+
+    new_c1 = g.colors[v2]
+    new_c2 = g.colors[v1]
+
+    delta1 = nothing
+    delta2 = nothing
+
+    # Check if the change is tabu. If it is, delta is nothing.
+    if !is_tabu(g, v1, new_c1, tabu_table, iter) && !is_tabu(g, v2, new_c2, tabu_table, iter)
+        delta1 = eval_delta_modif(g, v1, new_c1) 
+        new_g = simulate_update(g, v1, new_c1, delta1)
+        delta2 = eval_delta_modif(new_g, v2, new_c2)
+    end
+    
+    return v1, new_c1, delta1, v2, new_c2, delta2
+end
+
+
+"""
     update!(g::ColoredGraph, v::Int, c::Int, delta::Int)
 
 Updates g according to the following change: the color c is assigned to the vertice v. 
@@ -265,6 +360,33 @@ function update!(g::ColoredGraph, v::Int, c::Int, delta::Int)
     if g.save_conflict
         push!(g.conflict_history, g.nb_conflict)
     end
+end
+
+
+"""
+    simulate_update(g::ColoredGraph, v::Int, c::Int, delta::Int)
+
+Simulates the updates of g according to the following change: the color c is assigned to the vertice v. 
+
+# Arguments 
+- g             ::ColoredGraph      : Graph instance
+- v             ::Int               : index of a vertice of g
+- new_c         ::Int               : New color to assign to v (not equal to 'g.colors[v]')
+- delta         ::Int               : Variation of the number of conflicts induced by the change
+
+# Outputs
+- new_g         ::ColoredGraph      : New Graph instance
+"""
+
+function simulate_update(g::ColoredGraph, v::Int, c::Int, delta::Int)
+    new_g = deepcopy(g)
+    # Updates g.colors
+    new_g.colors[v] = c
+
+    # Update g.nb_conflict
+    new_g.nb_conflict += delta
+
+    return new_g
 end
 
 
