@@ -16,8 +16,10 @@ TS-int algorithm applied to a ColoredGraph object.
 None
 """
 
-function tabu_search_int(g::ColoredGraph, neigh_iter::Int, tabu_iter_function::Function, distance_threshold::Float64)
+function tabu_search_int(g::ColoredGraph, neigh_iter::Int, tabu_iter_function::Function, distance_threshold::Float64, stopping_criterion::Int)
     start_time = time()
+
+    visited = 0
 
     # Intialize a priority queue of colorations
     Q = PriorityQueue{Vector{Int}, Int}()
@@ -29,7 +31,7 @@ function tabu_search_int(g::ColoredGraph, neigh_iter::Int, tabu_iter_function::F
     # Initialize radius of the spheres
     R = Int(floor(distance_threshold*g.n))
 
-    while !isempty(Q)
+    while !isempty(Q) && visited < stopping_criterion
         # Take the first element in the queue, with highest priority
         Cs, nb_conflict = peek(Q)
         g.colors, g.nb_conflict = deepcopy(Cs), nb_conflict
@@ -56,6 +58,7 @@ function tabu_search_int(g::ColoredGraph, neigh_iter::Int, tabu_iter_function::F
 
             i += 1
         end
+        visited += 1
         
         # Did we find a new coloration outside of the plateaus that have already been identified?
         new_plateau = true
@@ -88,6 +91,8 @@ mutable struct TSint <: Heuristic
     alpha               ::Union{Float64, Nothing}
     m_max               ::Union{Int, Nothing}
     tabu_iter_function  ::Union{Function, Nothing}
+
+    stopping_criterion  ::Int
 end
 
 
@@ -112,10 +117,32 @@ function (heuristic::TSint)(g::ColoredGraph)
     end
 
     solving_time = @elapsed begin
-        tabu_search_int(g, heuristic.neigh_iter, heuristic.tabu_iter_function, heuristic.distance_threshold)
+        tabu_search_int(g, heuristic.neigh_iter, heuristic.tabu_iter_function, heuristic.distance_threshold, heuristic.stopping_criterion)
     end
     
     g.resolution_time += solving_time
 
     push!(g.heuristics_applied, heuristic)
+end
+
+
+"""
+    save_parameters(heuristic::TSint, file_name::String)
+
+Saves the parameters of the TSint heuristic in the file called 'file_name'
+
+# Arguments 
+- heuristic             ::TSint             : TSint heuristic employed
+- file_name             ::String            : Name of the file to save results in
+
+# Outputs
+None
+"""
+
+function save_parameters(heuristic::TSint, file_name::String)
+    file = open("results/$file_name", "a")
+
+    write(file, "h TSint = nb_iter:$(heuristic.nb_iter) neigh_iter:$(heuristic.neigh_iter) tabu_iter:$(heuristic.tabu_iter) A:$(heuristic.A) alpha:$(heuristic.alpha) m_max:$(heuristic.m_max) criterion:$(heuristic.stopping_criterion)\n")
+
+    close(file)
 end
