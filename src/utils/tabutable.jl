@@ -10,6 +10,20 @@ mutable struct TabuTable
     colors_recorded     ::Vector{Vector{Int}}
 end
 
+
+"""
+    init_tabu_table(g::ColoredGraph, tabu_iter_function::Function)::TabuTable
+
+Initializes a TabuTable structure thanks to a graph and its tabu_iter function.
+
+# Arguments 
+- g                         ::ColoredGraph      : Graph instance
+- tabu_iter_function        ::Function          : Function to determine tabu_iter
+
+# Outputs
+- tabu_table                ::TabuTable         : The tabu table associated with the graph g   
+"""
+
 function init_tabu_table(g::ColoredGraph, tabu_iter_function::Function)::TabuTable
     tabu_table = ones(Int, g.n, g.k)
     m = 0
@@ -17,24 +31,28 @@ function init_tabu_table(g::ColoredGraph, tabu_iter_function::Function)::TabuTab
     colors_pivot = deepcopy(g.colors)
     nb_conflict_pivot = g.nb_conflict
     colors_recorded = Vector{Vector{Int}}()
-    return TabuTable(tabu_table, tabu_iter_function, m, Tc, colors_pivot, nb_conflict_pivot, colors_recorded)
+
+    tabu_table = TabuTable(tabu_table, tabu_iter_function, m, Tc, colors_pivot, nb_conflict_pivot, colors_recorded)
+    return tabu_table
 end
 
 
 """
-    update_tabu_table!(g::ColoredGraph, tabu_table::Matrix{Int}, tabu_iter::Int, iter::Int)
+    update_tabu_table!(g::ColoredGraph, delta::Int, T::TabuTable, iter::Int, R::Int)
 
 Updates tabu matrix, making the new graph g tabu.
 
 # Arguments 
 - g                     ::ColoredGraph          : Graph instance
-- tabu_table            ::Matrix{Int}           : tabu matrix
-- tabu_iter             ::Int                   : number of iterations during which the tabu is going to be active
-- iter                  ::Int                   : current iteration number
+- delta                 ::Int                   : Variation of number of conflicts
+- T                     ::TabuTable             : Tabu table 
+- iter                  ::Int                   : Current iteration number
+- R                     ::Int                   : Radius of the spheres considered
 
 # Outputs
 None
 """
+
 function update_tabu_table!(g::ColoredGraph, delta::Int, T::TabuTable, iter::Int, R::Int)
     #Update T.m
     if delta == 0
@@ -76,12 +94,13 @@ end
 Returns true if the current coloration is R-close to a previously recorded coloration, and false otherwise.
 
 # Arguments 
-- colors_pivot          ::Vector{Int}           : current coloration
-- colors_recorded       ::Vector{Vector{Int}}   : vector of all the previously recorded colorations
+- colors_pivot          ::Vector{Int}               : current coloration
+- colors_recorded       ::Vector{Vector{Int}}       : vector of all the previously recorded colorations
 
 # Outputs
 Boolean
 """
+
 function already_visited(T::TabuTable, k::Int, R::Int)::Bool
 
     for colors in T.colors_recorded

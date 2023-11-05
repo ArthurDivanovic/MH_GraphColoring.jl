@@ -1,4 +1,19 @@
-function day_bipartite_graph(colors1::Vector{Int}, colors2::Vector{Int}, k::Int)
+"""
+    day_bipartite_graph(colors1::Vector{Int}, colors2::Vector{Int}, k::Int)::Matrix{Int}
+
+Computes the weights useful for the computation of the distance between two colorations 
+(seen as a distance between partition), according to Day's Theorem.
+
+# Arguments 
+- colors1             ::Vector{Int}         : First coloration
+- colors2             ::Vector{Int}         : Second coloration
+- k                   ::Int                 : Number of colors 
+
+# Outputs 
+- weights             ::Matrix{Int}         :weights used in the affectation problem
+"""
+
+function day_bipartite_graph(colors1::Vector{Int}, colors2::Vector{Int}, k::Int)::Matrix{Int}
     @assert length(colors1) == length(colors2)
     
     n = length(colors1)
@@ -12,6 +27,19 @@ function day_bipartite_graph(colors1::Vector{Int}, colors2::Vector{Int}, k::Int)
     return weights
 end
 
+
+"""
+    hungarian_algorithm(original_cost_matrix::Matrix{Int})::Matrix{Bool}
+
+Computes a matching of minimum weight between two partitions. This matching is used when computing 
+the distance between two colorations.
+
+# Arguments 
+- original_cost_matrix            ::Matrix{Int}         : Weights used in the matching
+
+# Outputs 
+- matching                        ::Matrix{Bool}        : Matching of minimum weight
+"""
 
 function hungarian_algorithm(original_cost_matrix::Matrix{Int})::Matrix{Bool}
     cost_matrix = deepcopy(original_cost_matrix)
@@ -68,6 +96,21 @@ function hungarian_algorithm(original_cost_matrix::Matrix{Int})::Matrix{Bool}
     return matching
 end
 
+
+"""
+    get_distance(colors1::Vector{Int}, colors2::Vector{Int}, k::Int)::Int
+
+Computes the distance between two colorations. 
+
+# Arguments 
+- colors1             ::Vector{Int}         : First coloration
+- colors2             ::Vector{Int}         : Second coloration
+- k                   ::Int                 : Number of colors 
+
+# Outputs 
+- distance            ::Int                 : Distance between the two colorations
+"""
+
 function get_distance(colors1::Vector{Int}, colors2::Vector{Int}, k::Int)::Int
     n = length(colors1)
 
@@ -77,8 +120,26 @@ function get_distance(colors1::Vector{Int}, colors2::Vector{Int}, k::Int)::Int
 
     w1 = sum(cost_matrix .* matching) 
 
-    return n - w1
+    distance = n - w1
+
+    return distance
 end
+
+
+"""
+    in_sphere(colors1::Vector{Int}, colors2::Vector{Int}, k::Int, R::Int)
+
+Using the distance function above, determines wether a coloration is in the sphere of radius R around another coloration.
+
+# Arguments 
+- colors1            ::Vector{Int}       : First coloration
+- colors2            ::Vector{Int}       : Second coloration
+- k                  ::Int               : Number of colors 
+- R                  ::Int               : Radius of the sphere
+
+# Outputs 
+- a Boolean          ::Boolean           : Equal to true if the first coloration is R-close to the other, false otherwise. 
+"""
 
 function in_sphere(colors1::Vector{Int}, colors2::Vector{Int}, k::Int, R::Int)
     n = length(colors1)
@@ -87,8 +148,10 @@ function in_sphere(colors1::Vector{Int}, colors2::Vector{Int}, k::Int, R::Int)
 
     M = sum(maximum!(ones(Int,k,1), cost_matrix))
 
+    # Avoid computing a distance if the colorations are trivially far from each other
     if M < n - R
         return false
+
     else
         matching = hungarian_algorithm(cost_matrix)
 
