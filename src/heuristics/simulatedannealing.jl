@@ -99,7 +99,6 @@ function simulated_annealing(g::ColoredGraph, nb_iter::Int, T0::Float64, mu::Flo
 end
 
 
-
 mutable struct SimulatedAnnealing <: Heuristic
     T0          ::Union{Float64,Nothing}
     n_samples   ::Union{Int,Nothing}
@@ -164,7 +163,7 @@ None
 function save_parameters(heuristic::SimulatedAnnealing,file_name::String)
     file = open("results/$file_name", "a")
 
-    write(file, "h SimulatedAnnealing = nb_iter:$(heuristic.nb_iter) T0:$(heuristic.T0) mu:$(heuristic.T0) Tmin:$(heuristic.Tmin)\n")
+    write(file, "h SimulatedAnnealing = nb_iter:$(heuristic.nb_iter) T0:$(heuristic.T0) mu:$(heuristic.mu) Tmin:$(heuristic.Tmin)\n")
 
     close(file)
 end

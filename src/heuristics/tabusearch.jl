@@ -25,11 +25,8 @@ Tabu search over a Colored Graph with a random neighboor generation.
 
 """
 
-function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, tabu_iter_function::Function, R::Int)
+function tabu_search(g::ColoredGraph, nb_iter::Int, neigh_iter::Int, T::TabuTable, R::Int)
     start_time = time()
-
-    # Create tabu table
-    T = init_tabu_table(g, tabu_iter_function)
 
     @showprogress dt=1 desc="Computing..." for i in 1:nb_iter
 
@@ -110,18 +107,22 @@ None, the attributes of the graph g are updated.
 
 function (heuristic::TabuSearch)(g::ColoredGraph)
 
+    constant_iter = true
     # If no fixed tabu_iter number is given, a dynamic function would be utilized
     if isnothing(heuristic.tabu_iter)
         heuristic.tabu_iter_function = dynamic_tabu_iter_function(heuristic.A, heuristic.alpha, heuristic.m_max)
+
     else
         heuristic.tabu_iter_function = constant_tabu_iter_function(heuristic.tabu_iter)
+        constant_iter = false
     end
 
     # Perform the tabu search
     solving_time = @elapsed begin
         R = Int(floor(heuristic.distance_threshold*g.n))
+        T = init_tabu_table(g, heuristic.tabu_iter_function, constant_iter)
 
-        tabu_search(g, heuristic.nb_iter, heuristic.neigh_iter, heuristic.tabu_iter_function, R)
+        tabu_search(g, heuristic.nb_iter, heuristic.neigh_iter, T, R)
     end
     
     # Compute solving time

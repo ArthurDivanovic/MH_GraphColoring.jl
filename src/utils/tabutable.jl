@@ -8,6 +8,8 @@ mutable struct TabuTable
     colors_pivot        ::Vector{Int}
     nb_conflict_pivot   ::Int
     colors_recorded     ::Vector{Vector{Int}}
+
+    constant_iter       ::Bool
 end
 
 
@@ -24,7 +26,7 @@ Initializes a TabuTable structure thanks to a graph and its tabu_iter function.
 - tabu_table                ::TabuTable         : The tabu table associated with the graph g   
 """
 
-function init_tabu_table(g::ColoredGraph, tabu_iter_function::Function)::TabuTable
+function init_tabu_table(g::ColoredGraph, tabu_iter_function::Function, constant_iter::Bool)::TabuTable
     tabu_table = ones(Int, g.n, g.k)
     m = 0
     Tc = 0
@@ -32,7 +34,7 @@ function init_tabu_table(g::ColoredGraph, tabu_iter_function::Function)::TabuTab
     nb_conflict_pivot = g.nb_conflict
     colors_recorded = Vector{Vector{Int}}()
 
-    tabu_table = TabuTable(tabu_table, tabu_iter_function, m, Tc, colors_pivot, nb_conflict_pivot, colors_recorded)
+    tabu_table = TabuTable(tabu_table, tabu_iter_function, m, Tc, colors_pivot, nb_conflict_pivot, colors_recorded, constant_iter)
     return tabu_table
 end
 
@@ -54,37 +56,43 @@ None
 """
 
 function update_tabu_table!(g::ColoredGraph, delta::Int, T::TabuTable, iter::Int, R::Int)
-    #Update T.m
-    if delta == 0
-        T.m += 1
-    else
-        T.m = 0
-    end
 
-    #Update T.Tc, T.colors_pivot, T.nb_conflict_pivot and T.colors_recorded
-    if !in_sphere(g.colors, T.colors_pivot, g.k, R)
-        T.colors_pivot = deepcopy(g.colors)
-        T.nb_conflict_pivot = g.nb_conflict
-
-        if already_visited(T, g.k, R)
-            T.Tc += 1
+    #If T.m == nothing, classic tabu table incrementation 
+    if !T.constant_iter
+        #Update T.m
+        if delta == 0
+            T.m += 1
         else
-            T.Tc = 0
-            push!(T.colors_recorded, T.colors_pivot)
+            T.m = 0
+        end
+
+        #Update T.Tc, T.colors_pivot, T.nb_conflict_pivot and T.colors_recorded
+        if !in_sphere(g.colors, T.colors_pivot, g.k, R)
+            T.colors_pivot = deepcopy(g.colors)
+            T.nb_conflict_pivot = g.nb_conflict
+
+            if already_visited(T, g.k, R)
+                T.Tc += 1
+            else
+                T.Tc = 0
+                push!(T.colors_recorded, T.colors_pivot)
+            end
+        end
+
+        #Update T.colors_pivot and T.nb_conflict_pivot (i.e. ‘‘recentering’’ the current sphere)
+        if g.nb_conflict < T.nb_conflict_pivot
+            T.colors_pivot = deepcopy(g.colors)
+            T.nb_conflict_pivot = g.nb_conflict
         end
     end
-    
+
     #Update T.tabu_table
     tabu_iter = Int(floor(T.tabu_iter_function(g, T.m) + T.Tc))
     for i = 1:g.n
         T.tabu_table[i,g.colors[i]] =  iter + tabu_iter
     end
 
-    #Update T.colors_pivot and T.nb_conflict_pivot (i.e. ‘‘recentering’’ the current sphere)
-    if g.nb_conflict < T.nb_conflict_pivot
-        T.colors_pivot = deepcopy(g.colors)
-        T.nb_conflict_pivot = g.nb_conflict
-    end
+        
 end
 
 """
