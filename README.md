@@ -9,6 +9,7 @@ It contains all the necessary files for designing, using, and testing various me
 1. [Introduction](#1-introduction)
 2. [Installation](#2-installation)
 3. [Structure and Documentation](#3-structure-and-documentation)
+4. [Use](#4-use)
 
 ## 1. Introduction
 
@@ -52,7 +53,7 @@ The rest of the folder is divided into two sub-folders:
 
 ### 3.2 Data
 
-This folder contains the instances used for performance assessment. They are represented as `.txt` files that contain information about the number of vertices, the number of edges, and the edges between the vertices.
+This folder contains the instances used for performance assessment. They are represented as `.txt` files that contain information about the number of vertices, the number of edges, and the edges between the vertices. There is also a file `kcolors.txt` containing the k studied for each instance.
 
 ### 3.3 Results
 
@@ -61,3 +62,34 @@ The Results folder also contains `.txt` files. The names of the files correspond
 This repository presents a joint work done by Axel Navarro and Arthur Divanovic.
 
 It contains all the files necessary for the design, use, and testing of some metaheuristics applied to a graph coloring problem. The instances used for performance assessment as well as the results obatined are also attached to the project.
+
+## 4. Use
+
+Here is an example. 
+
+1. Initialize a ColoredGraph
+
+```julia
+g = init_graph("data/dsjc125.1.col.txt", "data/kcolors.txt")
+```
+
+2.Initialize a heuristic
+```julia
+T0 = 12
+nb_iter = 100000
+mu = 0.95
+Tmin = 0.01
+
+heuristic = SimulatedAnnealing(T0, nothing, nothing, nb_iter, mu, Tmin)
+```
+
+3.Apply the heuristic
+```julia
+simulatedannealing(g)
+```
+
+4. Get best coloration and the corresponding conflict number
+```julia
+println(g.best_colors)
+println(g.nb_conflict_min)
+```
