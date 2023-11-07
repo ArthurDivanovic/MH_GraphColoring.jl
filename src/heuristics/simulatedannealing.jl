@@ -134,11 +134,7 @@ function (heuristic::SimulatedAnnealing)(g::ColoredGraph)
     g.resolution_time += initialization_time
 
     solving_time = @elapsed begin
-        if !heuristic.swap 
-            simulated_annealing(g, heuristic.nb_iter, heuristic.T0, heuristic.mu, heuristic.Tmin)
-        else
-            simulated_swap_annealing(g, heuristic.nb_iter, heuristic.T0, heuristic.mu, heuristic.Tmin)
-        end
+        simulated_annealing(g, heuristic.nb_iter, heuristic.T0, heuristic.mu, heuristic.Tmin)
     end
 
     g.resolution_time += solving_time
