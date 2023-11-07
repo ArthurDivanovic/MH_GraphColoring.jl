@@ -1,6 +1,3 @@
-include("coloredgraph.jl")
-
-
 """
     eval(g::ColoredGraph)::Int  
 

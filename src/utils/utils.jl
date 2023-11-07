@@ -1,6 +1,6 @@
 include("parser.jl")
-include("eval.jl")
 include("coloredgraph.jl")
+include("eval.jl")
 include("distance.jl")
 include("tabutable.jl")
 include("neighbor.jl")
